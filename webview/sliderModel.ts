@@ -59,6 +59,26 @@ export function orderSelection(stops: readonly Pick<Stop, 'id'>[], selection: re
   return a <= b ? { oldIndex: a, newIndex: b, oldHandle: 0 } : { oldIndex: b, newIndex: a, oldHandle: 1 };
 }
 
+/** The stops that go on the timeline, optionally leaving out commits with no visible change. */
+export function visibleStops(stops: readonly Stop[], contentChangesOnly: boolean): Stop[] {
+  return stops.filter((s) => !(contentChangesOnly && s.noVisibleChange));
+}
+
+/**
+ * The visible stop to show in place of `id`: itself, or for a hidden commit the
+ * nearest older visible stop (which has the same content in linear history),
+ * else the nearest newer one. Undefined when `id` is unknown.
+ */
+export function nearestVisible(all: readonly Stop[], visible: readonly Stop[], id: string): string | undefined {
+  const shown = new Set(visible.map((s) => s.id));
+  if (shown.has(id)) return id;
+  const i = all.findIndex((s) => s.id === id);
+  if (i < 0) return undefined;
+  for (let j = i - 1; j >= 0; j--) if (shown.has(all[j].id)) return all[j].id;
+  for (let j = i + 1; j < all.length; j++) if (shown.has(all[j].id)) return all[j].id;
+  return undefined;
+}
+
 export function clampIndex(stops: readonly unknown[], index: number): number {
   return Math.min(stops.length - 1, Math.max(0, index));
 }

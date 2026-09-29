@@ -40,7 +40,7 @@ The UI tests (`test/ui`) serve the built webview the way VS Code does: the page 
 npm install --prefix /tmp/cs code-server
 
 # Point an extensions directory at this checkout.
-mkdir -p /tmp/cs-ext && ln -sfn "$PWD" /tmp/cs-ext/AndrewBenz.diff-slider-0.1.0
+mkdir -p /tmp/cs-ext && ln -sfn "$PWD" /tmp/cs-ext/AndrewBenz.diff-slider-0.2.0
 
 npm run build
 /tmp/cs/node_modules/.bin/code-server --auth none --bind-addr 127.0.0.1:8123 \
@@ -62,8 +62,8 @@ The **Build** workflow (`.github/workflows/build.yml`) runs the typecheck, unit 
 To publish a release, bump `version` in `package.json` (and add a `CHANGELOG.md` entry), then push a matching tag:
 
 ```sh
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.2.0
+git push origin v0.2.0
 ```
 
 The workflow checks that the tag matches `package.json` and creates a GitHub release with the `.vsix` attached.

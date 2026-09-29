@@ -148,6 +148,57 @@ code {
   color: var(--vscode-inputOption-activeForeground, inherit);
 }
 
+.check {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* The native checkbox stays focusable and clickable (through the label) but is drawn by .check-box. */
+.check input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+}
+
+.check .check-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid var(--vscode-checkbox-border, var(--ds-border));
+  border-radius: 3px;
+  background: var(--vscode-checkbox-background, transparent);
+  color: var(--vscode-checkbox-foreground, var(--vscode-foreground));
+  font-size: 14px;
+}
+
+.check input:not(:checked) + .check-box::before {
+  visibility: hidden;
+}
+
+.check input:focus-visible + .check-box {
+  outline: 1px solid var(--ds-accent);
+  outline-offset: 1px;
+}
+
+/* Too narrow for the label: keep the box (its tooltip explains it) so the toolbar still fits. */
+@media (max-width: 540px) {
+  .check-text {
+    display: none;
+  }
+}
+
 button:focus-visible,
 .side:focus-visible {
   outline: 1px solid var(--ds-accent);

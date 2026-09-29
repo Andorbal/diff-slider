@@ -178,6 +178,140 @@ describe('getHistory', () => {
     expect((page.stops[2] as StopWithBlob).blob).toBeUndefined();
   });
 
+  it('flags commits that change nothing the diff shows', async () => {
+    const r = repo();
+    r.git('config', 'core.autocrlf', 'false');
+    r.git('config', 'core.fileMode', 'false');
+    r.write('f.txt', 'a\nb\nc\n');
+    r.commit('add');
+    r.git('mv', 'f.txt', 'g.txt');
+    r.commit('pure rename');
+    r.git('update-index', '--chmod=+x', 'g.txt');
+    r.commit('mode change');
+    r.write('g.txt', 'a\r\nb\r\nc\r\n');
+    r.commit('to crlf');
+    r.write('g.txt', 'a\r\nB\r\nc\r\n');
+    r.commit('edit');
+    r.git('mv', 'g.txt', 'h.txt');
+    r.write('h.txt', 'a\nB\nc\n');
+    r.commit('rename and back to lf');
+    r.write('h.txt', 'a\nB\nc\nd\n');
+    r.commit('append');
+
+    const page = await getHistory(GIT, query(r, 'h.txt'));
+    const flags = Object.fromEntries(page.stops.map((s) => [s.subject, !!s.noVisibleChange]));
+    expect(flags).toEqual({
+      add: false,
+      'pure rename': true,
+      'mode change': true,
+      'to crlf': true,
+      edit: false,
+      'rename and back to lf': true,
+      append: false,
+    });
+    // Line-ending-only changes count no changed lines, matching what the diff editor shows.
+    const stats = page.stops.map((s) => [s.subject, s.added, s.deleted]);
+    expect(stats).toContainEqual(['to crlf', 0, 0]);
+    expect(stats).toContainEqual(['edit', 1, 1]);
+    expect(stats).toContainEqual(['rename and back to lf', 0, 0]);
+  });
+
+  it('never flags additions, deletions or binary changes', async () => {
+    const r = repo();
+    r.write('e.txt', '');
+    r.commit('add empty');
+    r.git('rm', '-q', 'e.txt');
+    r.commit('delete empty');
+    r.write('e.txt', Buffer.from([0, 1]));
+    r.commit('add binary');
+    r.write('e.txt', Buffer.from([0, 2]));
+    r.commit('change binary');
+
+    const page = await getHistory(GIT, query(r, 'e.txt', { follow: false }));
+    expect(page.stops.map((s) => s.subject)).toEqual(['add empty', 'delete empty', 'add binary', 'change binary']);
+    expect(page.stops.filter((s) => s.noVisibleChange)).toEqual([]);
+  });
+
+  it('compares merges with their first parent', async () => {
+    const r = repo();
+    r.git('config', 'core.autocrlf', 'false');
+    r.write('m.txt', 'a\nb\n');
+    r.commit('base');
+    r.git('checkout', '-q', '-b', 'side');
+    r.write('m.txt', 'a\r\nb\r\n');
+    r.commit('side to crlf');
+    r.git('checkout', '-q', 'main');
+    r.write('other.txt', 'x');
+    r.commit('main unrelated');
+    r.git('merge', '-q', '--no-ff', '-m', 'merge side', 'side');
+    r.write('m.txt', 'a\r\nB\r\n');
+    r.commit('edit');
+
+    const page = await getHistory(GIT, query(r, 'm.txt'));
+    expect(page.stops.map((s) => [s.subject, !!s.noVisibleChange])).toEqual([
+      ['base', false],
+      ['side to crlf', true],
+      ['merge side', true],
+      ['edit', false],
+    ]);
+  });
+
+  it.skipIf(process.platform === 'win32')('falls back when git does not know an optional flag', async () => {
+    const r = repo();
+    r.write('f.txt', 'a\nb\n');
+    r.commit('add');
+    r.git('mv', 'f.txt', 'g.txt');
+    r.commit('rename');
+    r.write('g.txt', 'a\r\nb\r\n');
+    r.commit('to crlf');
+
+    // A git that predates --ignore-cr-at-eol (2.16). Renames are still found from the log alone.
+    const oldGit = path.join(r.root, '..', `old-git-${path.basename(r.root)}`);
+    fs.writeFileSync(
+      oldGit,
+      '#!/bin/sh\nfor a; do [ "$a" = --ignore-cr-at-eol ] && { echo "fatal: unrecognized argument: $a" >&2; exit 128; }; done\nexec git "$@"\n',
+      { mode: 0o755 },
+    );
+    try {
+      const page = await getHistory(oldGit, query(r, 'g.txt'));
+      expect(page.stops.map((s) => [s.subject, !!s.noVisibleChange])).toEqual([
+        ['add', false],
+        ['rename', true],
+        // Without the flag line endings count as changes.
+        ['to crlf', false],
+      ]);
+      // Remembered, so the next call does not fail first.
+      expect((await getHistory(oldGit, query(r, 'g.txt'))).stops).toHaveLength(3);
+    } finally {
+      fs.rmSync(oldGit, { force: true });
+    }
+  });
+
+  it.skipIf(process.platform === 'win32')('hides nothing when git reports nothing about a commit', async () => {
+    const r = repo();
+    r.write('f.txt', 'a\nb\n');
+    r.commit('add');
+    r.write('f.txt', 'a\r\nb\r\n');
+    r.commit('to crlf');
+
+    // diff-tree succeeds but prints nothing, as a git with an unexpected output format might.
+    const quietGit = path.join(r.root, '..', `quiet-git-${path.basename(r.root)}`);
+    fs.writeFileSync(
+      quietGit,
+      '#!/bin/sh\nfor a; do [ "$a" = diff-tree ] && { cat >/dev/null; exit 0; }; done\nexec git "$@"\n',
+      { mode: 0o755 },
+    );
+    try {
+      const page = await getHistory(quietGit, query(r, 'f.txt'));
+      expect(page.stops.map((s) => [s.subject, !!s.noVisibleChange])).toEqual([
+        ['add', false],
+        ['to crlf', false],
+      ]);
+    } finally {
+      fs.rmSync(quietGit, { force: true });
+    }
+  });
+
   it('returns an empty history for a repository without commits', async () => {
     const r = repo();
     r.write('new.txt', 'x');

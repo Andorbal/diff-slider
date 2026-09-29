@@ -2,7 +2,7 @@
   "name": "diff-slider",
   "displayName": "Diff Slider",
   "description": "Scrub through a file's git history with a two-handle slider and watch the diff update live.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "AndrewBenz",
   "icon": "media/icon.png",
   "license": "MIT",
@@ -139,6 +139,11 @@
           "type": "boolean",
           "default": false,
           "markdownDescription": "Wrap long lines in the diff. Also toggled from the panel toolbar."
+        },
+        "diffSlider.contentChangesOnly": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Only show commits that change what the diff shows. Commits that just rename the file, change its mode or convert its line endings are left off the timeline. Also toggled from the panel toolbar."
         },
         "diffSlider.showEditorTitleButton": {
           "type": "boolean",

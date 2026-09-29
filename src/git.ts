@@ -21,7 +21,7 @@ export class GitError extends Error {
 /** Config overrides that keep user settings from changing the output we parse. */
 const SAFE_CONFIG = ['-c', 'log.showSignature=false', '-c', 'core.quotePath=false', '-c', 'color.ui=false'];
 
-export function runGit(git: string, args: string[], cwd: string): Promise<Buffer> {
+export function runGit(git: string, args: string[], cwd: string, input?: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     let child: ChildProcessWithoutNullStreams;
     try {
@@ -39,6 +39,10 @@ export function runGit(git: string, args: string[], cwd: string): Promise<Buffer
     child.stdout.on('data', (d: Buffer) => out.push(d));
     child.stderr.on('data', (d: Buffer) => errOut.push(d));
     child.on('error', (err) => reject(new GitError(`Failed to run git: ${err.message}`)));
+    if (input !== undefined) {
+      child.stdin.on('error', () => undefined);
+      child.stdin.end(input);
+    }
     child.on('close', (code) => {
       if (code === 0) {
         resolve(Buffer.concat(out));
@@ -176,13 +180,85 @@ export async function getHistory(git: string, q: HistoryQuery): Promise<HistoryP
   let commits = parseLog(output, q.relPath);
   if (q.follow) commits = commits.slice(q.skip);
   const hasMore = commits.length > q.limit;
-  return { stops: commits.slice(0, q.limit).reverse(), hasMore };
+  const stops = commits.slice(0, q.limit).reverse();
+  await markLineEndingOnly(git, q.root, stops);
+  return { stops, hasMore };
+}
+
+const IGNORE_CR = '--ignore-cr-at-eol';
+
+/** Git binaries too old (before 2.16) to ignore line endings. */
+const noIgnoreCr = new Set<string>();
+
+/**
+ * Flags commits whose change to the file is only line endings: the diff editor
+ * normalizes them, so it shows nothing. Asks git for the line counts of just
+ * the commits that could be such a change, this time ignoring line endings.
+ * Any file with a non-zero count changed visibly; git either omits the others
+ * or reports 0/0, depending on its version. Commits git says nothing about
+ * are left alone.
+ */
+async function markLineEndingOnly(git: string, root: string, stops: Stop[]): Promise<void> {
+  // Converting line endings replaces lines one for one.
+  const candidates = stops.filter(
+    (s) =>
+      s.sha &&
+      s.parents?.length &&
+      /^[MRCT]$/.test(s.status ?? '') &&
+      !s.noVisibleChange &&
+      !s.binary &&
+      s.added !== undefined &&
+      s.added > 0 &&
+      s.added === s.deleted,
+  );
+  if (!candidates.length || noIgnoreCr.has(git)) return;
+  const paths = [...new Set(candidates.flatMap((s) => (s.oldPath ? [s.path, s.oldPath] : [s.path])))];
+  // Each line is a commit and the parent to compare with; merges are diffed against their first.
+  const input = candidates.map((s) => `${s.sha} ${s.parents![0]}\n`).join('');
+  const args = ['diff-tree', '--stdin', '--always', '-z', '-r', '--numstat', '-M', IGNORE_CR, '--no-textconv', '--no-ext-diff'];
+  let output: string;
+  try {
+    output = (await runGit(git, [...args, '--', ...paths], root, input)).toString('utf8');
+  } catch (err) {
+    // Only a refinement: without it these commits simply stay on the timeline.
+    if (err instanceof GitError && err.stderr.includes(IGNORE_CR)) noIgnoreCr.add(git);
+    return;
+  }
+  // "<sha>\0" for each commit (--always: even when nothing changed), then
+  // "added\tdeleted\tpath\0" (or "added\tdeleted\t\0old\0new\0") per file.
+  const bySha = new Map(candidates.map((s) => [s.sha!, s]));
+  const seen = new Set<string>();
+  const changed = new Set<string>();
+  let current: Stop | undefined;
+  const tokens = output.split('\0');
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i].replace(/^\n+/, '');
+    const m = /^(-|\d+)\t(-|\d+)\t([\s\S]*)$/.exec(token);
+    if (!m) {
+      current = bySha.get(token.split(' ')[0]);
+      if (current) seen.add(current.id);
+      continue;
+    }
+    let p = m[3];
+    if (p === '') {
+      ++i; // old path
+      p = tokens[++i] ?? '';
+    }
+    if (current && p === current.path && (m[1] !== '0' || m[2] !== '0')) changed.add(current.id);
+  }
+  for (const s of candidates) {
+    if (!seen.has(s.id) || changed.has(s.id)) continue;
+    s.noVisibleChange = true;
+    s.added = 0;
+    s.deleted = 0;
+  }
 }
 
 interface RawEntry {
   status: string;
   srcPath: string;
   dstPath: string;
+  srcOid: string;
   dstOid: string;
 }
 
@@ -218,15 +294,16 @@ export function parseLog(output: string, relPath: string): Stop[] {
       if (token.startsWith(':')) {
         const parts = token.slice(1).split(' ');
         const status = parts[parts.length - 1] ?? '';
+        const srcOid = parts[2] ?? '';
         const dstOid = parts[3] ?? '';
         const letter = status.charAt(0);
         if (letter === 'R' || letter === 'C') {
           const src = tokens[++i] ?? '';
           const dst = tokens[++i] ?? '';
-          raws.push({ status: letter, srcPath: src, dstPath: dst, dstOid });
+          raws.push({ status: letter, srcPath: src, dstPath: dst, srcOid, dstOid });
         } else {
           const p = tokens[++i] ?? '';
-          raws.push({ status: letter, srcPath: p, dstPath: p, dstOid });
+          raws.push({ status: letter, srcPath: p, dstPath: p, srcOid, dstOid });
         }
         continue;
       }
@@ -253,6 +330,8 @@ export function parseLog(output: string, relPath: string): Stop[] {
     const num = (raw && nums.find((n) => n.path === raw.dstPath)) ?? nums[0];
     const filePath = raw?.dstPath ?? num?.path ?? relPath;
     const deleted = raw?.status === 'D';
+    // The same blob on both sides: a pure rename or a mode change.
+    const noVisibleChange = !!raw && raw.status !== 'A' && !deleted && raw.srcOid === raw.dstOid;
 
     const stop: Stop = {
       id: sha,
@@ -274,6 +353,7 @@ export function parseLog(output: string, relPath: string): Stop[] {
       deleted: num?.deleted,
       binary: num?.binary || undefined,
       missing: deleted || undefined,
+      noVisibleChange: noVisibleChange || undefined,
     };
     if (raw && raw.srcPath !== raw.dstPath) stop.oldPath = raw.srcPath;
     // Remember the blob id so content can be fetched without a path lookup.

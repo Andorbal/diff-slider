@@ -348,3 +348,58 @@ test('persists the selection in webview state', async ({ page }) => {
   const state = await page.evaluate(() => (window as unknown as { __host: { state(): unknown } }).__host.state());
   expect(state).toEqual({ resource: fixture.init.resource, selection: [stops[12].id, WORKING_ID] });
 });
+
+// The newest page holds commits 70..119; three of them change nothing visible, including the latest.
+const HIDDEN = [115, 118, 119];
+const hidingFixture = buildFixture({ noVisibleChange: HIDDEN });
+const commitAt = (c: number) => hidingFixture.init.stops[c - 70];
+
+test('commits without a visible change are left off the timeline until unchecked', async ({ page }) => {
+  const problems = await open(page, { fixture: { noVisibleChange: HIDDEN } });
+  await waitForDiff(page);
+  const box = page.locator('input[data-option="contentChangesOnly"]');
+  await expect(box).toBeChecked();
+  await expect(page.locator('.tl-tick')).toHaveCount(52 - HIDDEN.length);
+  await expect(page.locator('.file-count')).toHaveText('47 commits loaded (3 hidden)');
+  // The host picked the latest commit, which is hidden, so the handle sits on the
+  // nearest older visible commit instead. It has the same content.
+  expect(await debug(page, (d) => d.selection())).toEqual([commitAt(117).id, WORKING_ID]);
+  expect(await debug(page, (d) => d.original())).toBe(hidingFixture.contents[commitAt(119).id]);
+
+  // Unchecking brings them back, and the choice is saved through the host.
+  await page.locator('label.check').click();
+  await expect(box).not.toBeChecked();
+  await expect(page.locator('.tl-tick')).toHaveCount(52);
+  await expect(page.locator('.file-count')).toHaveText('50 commits loaded');
+  expect((await sent(page)).filter((m) => m.type === 'setOption')).toEqual([
+    { type: 'setOption', key: 'contentChangesOnly', value: false },
+  ]);
+
+  // A handle on a commit that gets hidden again moves to the nearest older visible one.
+  await drag(page, 'old', 118 - 70);
+  expect(await debug(page, (d) => d.selection())).toEqual([commitAt(118).id, WORKING_ID]);
+  await page.locator('label.check').click();
+  await expect(box).toBeChecked();
+  await expect(page.locator('.tl-tick')).toHaveCount(52 - HIDDEN.length);
+  expect(await debug(page, (d) => d.selection())).toEqual([commitAt(117).id, WORKING_ID]);
+  await expect.poll(() => debug(page, (d) => d.original())).toBe(hidingFixture.contents[commitAt(117).id]);
+
+  // Shortcuts keep working while the checkbox has focus.
+  await box.focus();
+  await page.keyboard.press('[');
+  expect(await debug(page, (d) => d.selection())).toEqual([commitAt(116).id, STAGED_ID]);
+  expect(problems).toEqual([]);
+});
+
+test('the filter follows the setting when it changes in VS Code', async ({ page }) => {
+  await open(page, { fixture: { noVisibleChange: HIDDEN } });
+  await expect(page.locator('.tl-tick')).toHaveCount(52 - HIDDEN.length);
+  await page.evaluate(() => {
+    const host = (window as unknown as { __host: { fixture: { init: { options: object } }; send(m: unknown): void } }).__host;
+    host.send({ type: 'options', options: { ...host.fixture.init.options, contentChangesOnly: false } });
+  });
+  await expect(page.locator('.tl-tick')).toHaveCount(52);
+  await expect(page.locator('input[data-option="contentChangesOnly"]')).not.toBeChecked();
+  // The host already knows; nothing is sent back.
+  expect((await sent(page)).filter((m) => m.type === 'setOption')).toEqual([]);
+});

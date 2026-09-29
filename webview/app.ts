@@ -15,7 +15,7 @@ import { DiffView, type DiffStats, type Reveal } from './diffView';
 import { escapeHtml, plural, relativeTime, stopLabel } from './format';
 import { resolveLanguage } from './languages';
 import { Slider, type InspectMode } from './slider';
-import { orderSelection } from './sliderModel';
+import { nearestVisible, orderSelection, visibleStops } from './sliderModel';
 
 export interface HostApi {
   postMessage(message: WebviewMessage): void;
@@ -52,6 +52,9 @@ export class App {
   >;
 
   private payload?: InitPayload;
+  /** Every stop the host has sent, oldest first. */
+  private allStops: Stop[] = [];
+  /** The stops on the timeline: `allStops`, minus hidden commits. */
   private stops: Stop[] = [];
   private selection: [string, string] = [WORKING_ID, WORKING_ID];
   private options: DiffOptions = {
@@ -59,6 +62,7 @@ export class App {
     ignoreTrimWhitespace: false,
     hideUnchangedRegions: false,
     wordWrap: false,
+    contentChangesOnly: true,
   };
   private hasMore = false;
   private loadingMore = false;
@@ -87,6 +91,10 @@ export class App {
           <span class="file-count"></span>
         </div>
         <div class="toolbar" role="toolbar">
+          <label class="check" title="Hide commits that don't change what the diff shows: pure renames, mode changes and line-ending conversions">
+            <input type="checkbox" data-option="contentChangesOnly"><span class="check-box dsi dsi-check"></span><span class="check-text">Content changes only</span>
+          </label>
+          <span class="sep"></span>
           <button data-cmd="older" title="Step both handles one commit older ( [ )"><span class="dsi dsi-arrow-left"></span></button>
           <button data-cmd="newer" title="Step both handles one commit newer ( ] )"><span class="dsi dsi-arrow-right"></span></button>
           <button data-cmd="reset" title="Reset: latest commit ↔ working copy (R)"><span class="dsi dsi-discard"></span></button>
@@ -152,6 +160,7 @@ export class App {
     document.body.appendChild(this.card.el);
 
     this.root.addEventListener('click', (e) => this.onClick(e));
+    this.root.addEventListener('change', (e) => this.onChange(e));
     document.addEventListener('keydown', (e) => this.onKey(e));
     window.addEventListener('message', (e: MessageEvent<HostMessage>) => this.onMessage(e.data));
     window.addEventListener('blur', () => this.card.hide());
@@ -209,9 +218,7 @@ export class App {
         this.onWorkingCopyChanged(msg.stop);
         break;
       case 'options':
-        this.options = msg.options;
-        this.renderToggles();
-        this.diff?.setOptions(this.options);
+        this.applyOptions(msg.options);
         break;
       case 'select':
         this.setSelection(msg.selection);
@@ -240,13 +247,14 @@ export class App {
     this.diff?.forget(WORKING_ID);
     this.diff?.forget(STAGED_ID);
 
-    this.stops = payload.stops;
+    this.allStops = payload.stops;
+    this.stops = visibleStops(this.allStops, this.options.contentChangesOnly);
     this.hasMore = payload.hasMore;
     this.loadingMore = false;
     this.slider.setLoading(false);
     this.selection = this.validSelection(payload.selection ?? this.selection);
 
-    if (!this.stops.some((s) => s.kind !== 'working')) {
+    if (!this.allStops.some((s) => s.kind !== 'working')) {
       this.setStatus('empty', 'This file has no git history yet. Commit it (or stage it) and its history will show up here.');
     } else {
       this.setStatus('ready');
@@ -281,8 +289,9 @@ export class App {
 
   private onMore(stops: Stop[], hasMore: boolean): void {
     this.loadingMore = false;
-    const known = new Set(this.stops.map((s) => s.id));
-    this.stops = [...stops.filter((s) => !known.has(s.id)), ...this.stops];
+    const known = new Set(this.allStops.map((s) => s.id));
+    this.allStops = [...stops.filter((s) => !known.has(s.id)), ...this.allStops];
+    this.stops = visibleStops(this.allStops, this.options.contentChangesOnly);
     this.hasMore = hasMore;
     this.slider.setLoading(false);
     this.slider.setData(this.stops, hasMore);
@@ -304,9 +313,9 @@ export class App {
   }
 
   private onWorkingCopyChanged(stop: Stop): void {
-    const i = this.stops.findIndex((s) => s.id === WORKING_ID);
-    if (i < 0) return;
-    this.stops = [...this.stops.slice(0, i), stop, ...this.stops.slice(i + 1)];
+    if (!this.allStops.some((s) => s.id === WORKING_ID)) return;
+    this.allStops = this.allStops.map((s) => (s.id === WORKING_ID ? stop : s));
+    this.stops = visibleStops(this.allStops, this.options.contentChangesOnly);
     this.slider.setData(this.stops, this.hasMore);
     this.cache.delete(WORKING_ID);
     this.renderCompare();
@@ -315,10 +324,11 @@ export class App {
 
   // ---- selection ----
 
+  /** `sel` with hidden commits moved to the nearest visible stop, or the default if a stop is unknown. */
   private validSelection(sel: [string, string]): [string, string] {
-    const has = (id: string) => this.stops.some((s) => s.id === id);
-    if (has(sel[0]) && has(sel[1])) return sel;
-    return this.defaultSelection();
+    const a = nearestVisible(this.allStops, this.stops, sel[0]);
+    const b = nearestVisible(this.allStops, this.stops, sel[1]);
+    return a && b ? [a, b] : this.defaultSelection();
   }
 
   private defaultSelection(): [string, string] {
@@ -425,9 +435,13 @@ export class App {
 
   private renderHeader(): void {
     const commits = this.stops.filter((s) => s.kind === 'commit').length;
-    this.el.fileCount.textContent = commits
-      ? `${plural(commits, 'commit')}${this.hasMore ? ' loaded' : ''}`
-      : 'no commits';
+    const hidden = this.allStops.length - this.stops.length;
+    this.el.fileCount.textContent =
+      (commits ? `${plural(commits, 'commit')}${this.hasMore ? ' loaded' : ''}` : 'no commits') +
+      (hidden ? ` (${hidden.toLocaleString()} hidden)` : '');
+    this.el.fileCount.title = hidden
+      ? `${plural(hidden, 'commit')} without a visible change hidden. Uncheck "Content changes only" to show them.`
+      : '';
   }
 
   private sideHtml(stop: Stop | undefined, role: 'old' | 'new'): string {
@@ -476,6 +490,9 @@ export class App {
       b.setAttribute('aria-pressed', String(!!this.options[key]));
       b.classList.toggle('on', !!this.options[key]);
     });
+    this.root.querySelectorAll<HTMLInputElement>('input[data-option]').forEach((input) => {
+      input.checked = !!this.options[input.dataset.option as keyof DiffOptions];
+    });
   }
 
   private inspect(stop: Stop | undefined, anchorX: number, mode: InspectMode): void {
@@ -508,10 +525,29 @@ export class App {
   // ---- commands ----
 
   private toggle(key: keyof DiffOptions): void {
-    this.options = { ...this.options, [key]: !this.options[key] };
+    this.setOption(key, !this.options[key]);
+  }
+
+  private setOption(key: keyof DiffOptions, value: boolean): void {
+    this.applyOptions({ ...this.options, [key]: value });
+    this.post({ type: 'setOption', key, value });
+  }
+
+  private applyOptions(options: DiffOptions): void {
+    const refilter = options.contentChangesOnly !== this.options.contentChangesOnly;
+    this.options = options;
     this.renderToggles();
-    this.diff?.setOptions(this.options);
-    this.post({ type: 'setOption', key, value: this.options[key] });
+    this.diff?.setOptions(options);
+    if (refilter) this.refilter();
+  }
+
+  /** Rebuilds the timeline after the filter changed, moving handles off commits that were hidden. */
+  private refilter(): void {
+    if (!this.payload || this.payload.error) return;
+    this.stops = visibleStops(this.allStops, this.options.contentChangesOnly);
+    this.slider.setData(this.stops, this.hasMore);
+    this.renderHeader();
+    this.setSelection(this.selection);
   }
 
   private run(cmd: string): void {
@@ -562,9 +598,14 @@ export class App {
     if (cmd) this.run(cmd);
   }
 
+  private onChange(e: Event): void {
+    const input = (e.target as HTMLElement).closest<HTMLInputElement>('input[data-option]');
+    if (input) this.setOption(input.dataset.option as keyof DiffOptions, input.checked);
+  }
+
   private onKey(e: KeyboardEvent): void {
     const target = e.target as HTMLElement;
-    if (target.closest('.monaco-editor, input, textarea, select')) return;
+    if (target.closest('.monaco-editor, input:not([type="checkbox"]), textarea, select')) return;
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     const onHandle = !!target.closest('.tl-handle');
     let handled = true;
