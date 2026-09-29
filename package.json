@@ -140,6 +140,11 @@
           "default": false,
           "markdownDescription": "Wrap long lines in the diff. Also toggled from the panel toolbar."
         },
+        "diffSlider.contentChangesOnly": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Only show commits that change what the diff shows. Commits that just rename the file, change its mode or convert its line endings are left off the timeline. Also toggled from the panel toolbar."
+        },
         "diffSlider.showEditorTitleButton": {
           "type": "boolean",
           "default": true,

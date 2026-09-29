@@ -125,9 +125,17 @@ const FIELD = '\x1f';
 const RECORD = '\x1e';
 const LOG_FORMAT = `${RECORD}%H${FIELD}%P${FIELD}%an${FIELD}%ae${FIELD}%at${FIELD}%cn${FIELD}%ct${FIELD}%D${FIELD}%B`;
 
-const diffMergesSupport = new Map<string, boolean>();
+/**
+ * Flags that older gits reject: `--diff-merges` needs 2.31, `--ignore-cr-at-eol`
+ * 2.16. Line endings are ignored because the diff editor normalizes them, so
+ * the line counts match what it shows.
+ */
+const OPTIONAL_FLAGS = ['--diff-merges=first-parent', '--ignore-cr-at-eol'];
 
-function historyArgs(q: HistoryQuery, diffMerges: boolean): string[] {
+/** Optional flags each git binary has rejected. */
+const unsupportedFlags = new Map<string, Set<string>>();
+
+function historyArgs(q: HistoryQuery, optionalFlags: string[]): string[] {
   const args = [
     'log',
     `--format=${LOG_FORMAT}`,
@@ -139,8 +147,8 @@ function historyArgs(q: HistoryQuery, diffMerges: boolean): string[] {
     '--no-textconv',
     '--no-ext-diff',
     '-M',
+    ...optionalFlags,
   ];
-  if (diffMerges) args.push('--diff-merges=first-parent');
   if (q.follow) args.push('--follow');
   if (q.firstParent) args.push('--first-parent');
   // `--follow` does not track renames inside commits dropped by `--skip`, so in
@@ -159,18 +167,20 @@ function historyArgs(q: HistoryQuery, diffMerges: boolean): string[] {
 /** Returns one page of the file's history, oldest commit first. */
 export async function getHistory(git: string, q: HistoryQuery): Promise<HistoryPage> {
   if (!(await hasHead(git, q.root))) return { stops: [], hasMore: false };
+  const unsupported = unsupportedFlags.get(git) ?? new Set<string>();
+  unsupportedFlags.set(git, unsupported);
   let output: string;
-  const supported = diffMergesSupport.get(git) ?? true;
-  try {
-    output = await runGitText(git, historyArgs(q, supported), q.root);
-    diffMergesSupport.set(git, supported);
-  } catch (err) {
-    // --diff-merges needs git 2.31+; retry without it on older versions.
-    if (supported && err instanceof GitError && /diff-merges/.test(err.stderr)) {
-      diffMergesSupport.set(git, false);
-      output = await runGitText(git, historyArgs(q, false), q.root);
-    } else {
-      throw err;
+  for (;;) {
+    const flags = OPTIONAL_FLAGS.filter((f) => !unsupported.has(f));
+    try {
+      output = await runGitText(git, historyArgs(q, flags), q.root);
+      break;
+    } catch (err) {
+      // Retry without whichever optional flag this git does not know.
+      const stderr = err instanceof GitError ? err.stderr : '';
+      const rejected = flags.find((f) => stderr.includes(f.split('=')[0]));
+      if (!rejected) throw err;
+      unsupported.add(rejected);
     }
   }
   let commits = parseLog(output, q.relPath);
@@ -183,6 +193,7 @@ interface RawEntry {
   status: string;
   srcPath: string;
   dstPath: string;
+  srcOid: string;
   dstOid: string;
 }
 
@@ -218,15 +229,16 @@ export function parseLog(output: string, relPath: string): Stop[] {
       if (token.startsWith(':')) {
         const parts = token.slice(1).split(' ');
         const status = parts[parts.length - 1] ?? '';
+        const srcOid = parts[2] ?? '';
         const dstOid = parts[3] ?? '';
         const letter = status.charAt(0);
         if (letter === 'R' || letter === 'C') {
           const src = tokens[++i] ?? '';
           const dst = tokens[++i] ?? '';
-          raws.push({ status: letter, srcPath: src, dstPath: dst, dstOid });
+          raws.push({ status: letter, srcPath: src, dstPath: dst, srcOid, dstOid });
         } else {
           const p = tokens[++i] ?? '';
-          raws.push({ status: letter, srcPath: p, dstPath: p, dstOid });
+          raws.push({ status: letter, srcPath: p, dstPath: p, srcOid, dstOid });
         }
         continue;
       }
@@ -253,6 +265,13 @@ export function parseLog(output: string, relPath: string): Stop[] {
     const num = (raw && nums.find((n) => n.path === raw.dstPath)) ?? nums[0];
     const filePath = raw?.dstPath ?? num?.path ?? relPath;
     const deleted = raw?.status === 'D';
+    // Same blob (a pure rename or mode change), or no lines changed once line
+    // endings are ignored; git then prints no numstat line at all.
+    const noVisibleChange =
+      !!raw &&
+      raw.status !== 'A' &&
+      !deleted &&
+      (raw.srcOid === raw.dstOid || (num ? !num.binary && num.added === 0 && num.deleted === 0 : true));
 
     const stop: Stop = {
       id: sha,
@@ -270,10 +289,11 @@ export function parseLog(output: string, relPath: string): Stop[] {
       committerName: cn,
       commitDate: Number(ct) * 1000,
       refs: decorations ? decorations.split(', ').filter(Boolean) : undefined,
-      added: num?.added,
-      deleted: num?.deleted,
+      added: num ? num.added : noVisibleChange ? 0 : undefined,
+      deleted: num ? num.deleted : noVisibleChange ? 0 : undefined,
       binary: num?.binary || undefined,
       missing: deleted || undefined,
+      noVisibleChange: noVisibleChange || undefined,
     };
     if (raw && raw.srcPath !== raw.dstPath) stop.oldPath = raw.srcPath;
     // Remember the blob id so content can be fetched without a path lookup.

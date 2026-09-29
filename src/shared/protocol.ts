@@ -40,6 +40,11 @@ export interface Stop {
   dirty?: boolean;
   /** True when the file does not exist at this stop (deleted). */
   missing?: boolean;
+  /**
+   * True when the commit touched the file without changing anything the diff
+   * shows: a pure rename, a mode change, or line endings only.
+   */
+  noVisibleChange?: boolean;
 }
 
 export interface DiffOptions {
@@ -47,6 +52,8 @@ export interface DiffOptions {
   ignoreTrimWhitespace: boolean;
   hideUnchangedRegions: boolean;
   wordWrap: boolean;
+  /** Leave commits with no visible change (see `Stop.noVisibleChange`) off the timeline. */
+  contentChangesOnly: boolean;
 }
 
 export interface InitPayload {

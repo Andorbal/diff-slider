@@ -32,6 +32,8 @@ export interface FixtureOptions {
   pageSize?: number;
   staged?: boolean;
   dirty?: boolean;
+  /** Commits (by index, oldest first) that leave the content alone, like a mode change. */
+  noVisibleChange?: number[];
 }
 
 export function buildFixture(o: FixtureOptions = {}): Fixture {
@@ -59,7 +61,10 @@ export function buildFixture(o: FixtureOptions = {}): Fixture {
   for (let c = 0; c < Math.max(total, 1); c++) {
     let added = 0;
     let deleted = 0;
-    if (c > 0) {
+    const unchanged = o.noVisibleChange?.includes(c) ?? false;
+    if (unchanged) {
+      // Same content as the previous commit.
+    } else if (c > 0) {
       const edits = 1 + Math.floor(rand() * 3);
       for (let e = 0; e < edits; e++) {
         const at = 3 + Math.floor(rand() * Math.max(1, lines.length - 6));
@@ -102,6 +107,7 @@ export function buildFixture(o: FixtureOptions = {}): Fixture {
       refs: c === 60 ? ['tag: v1.0.0'] : c === 100 ? ['tag: v2.0.0', 'origin/release'] : c === total - 1 ? ['HEAD -> main', 'origin/main'] : undefined,
       added,
       deleted,
+      noVisibleChange: unchanged || undefined,
     };
     if (c === 30) stop.oldPath = 'src/run.ts';
     commits.push(stop);
@@ -138,7 +144,13 @@ export function buildFixture(o: FixtureOptions = {}): Fixture {
       languageId: 'typescript',
       stops: [...newest, ...specials],
       hasMore: total > pageSize,
-      options: { renderSideBySide: true, ignoreTrimWhitespace: false, hideUnchangedRegions: false, wordWrap: false },
+      options: {
+        renderSideBySide: true,
+        ignoreTrimWhitespace: false,
+        hideUnchangedRegions: false,
+        wordWrap: false,
+        contentChangesOnly: true,
+      },
       pageSize,
       selection: [newest.length ? newest[newest.length - 1].id : WORKING_ID, WORKING_ID],
     },

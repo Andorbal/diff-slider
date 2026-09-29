@@ -37,6 +37,7 @@ export function readDiffOptions(): DiffOptions {
     ignoreTrimWhitespace: c.get('ignoreTrimWhitespace', false),
     hideUnchangedRegions: c.get('hideUnchangedRegions', false),
     wordWrap: c.get('wordWrap', false),
+    contentChangesOnly: c.get('contentChangesOnly', true),
   };
 }
 

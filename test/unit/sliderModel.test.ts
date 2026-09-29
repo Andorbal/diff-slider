@@ -7,8 +7,10 @@ import {
   granularityFor,
   indexAt,
   labelWidth,
+  nearestVisible,
   orderSelection,
   shiftSelection,
+  visibleStops,
   xOf,
 } from '../../webview/sliderModel';
 
@@ -133,5 +135,25 @@ describe('axis labels', () => {
     const stops = [commit('a', t), staged, working];
     const labels = axisLabels(stops, computeLayout(3, 800, { minSpacing: 10, padLeft: 20, padRight: 40 }));
     expect(labels.map((l) => l.text)).toContain('Staged');
+  });
+});
+
+describe('hiding commits without a visible change', () => {
+  const hidden = (id: string): Stop => ({ ...commit(id, 0, 0, 0), noVisibleChange: true });
+  const all = [hidden('h0'), commit('a', 0), hidden('h1'), hidden('h2'), commit('b', 0), hidden('h3'), staged, working];
+
+  it('drops only flagged commits, and only when asked', () => {
+    expect(visibleStops(all, true).map((s) => s.id)).toEqual(['a', 'b', '::staged', '::working']);
+    expect(visibleStops(all, false)).toEqual(all);
+  });
+
+  it('moves a hidden commit to the nearest older visible stop, else the nearest newer one', () => {
+    const visible = visibleStops(all, true);
+    expect(nearestVisible(all, visible, 'b')).toBe('b');
+    expect(nearestVisible(all, visible, 'h2')).toBe('a');
+    expect(nearestVisible(all, visible, 'h3')).toBe('b');
+    expect(nearestVisible(all, visible, 'h0')).toBe('a');
+    expect(nearestVisible(all, visible, 'unknown')).toBeUndefined();
+    expect(nearestVisible([hidden('x')], [], 'x')).toBeUndefined();
   });
 });

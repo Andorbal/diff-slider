@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Commits that don't change what the diff shows (renaming the file, changing its mode, or converting its line endings) are hidden from the timeline. Uncheck **Content changes only** in the toolbar, or set `diffSlider.contentChangesOnly` to `false`, to show them.
+- Line counts on the timeline and commit card ignore line-ending changes, matching the diff.
+
 ## 0.1.0
 
 First release.

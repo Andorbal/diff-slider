@@ -20,6 +20,7 @@ Open a file and press **Ctrl+Alt+H** (**⌃⌘H** on macOS). You can also run it
 - **Each dot is a commit that changed this file.** The oldest loaded commit is on the left. Your **working copy** is the diamond on the far right. If the file has staged changes, a **Staged** stop sits just before it.
 - **The bar above each commit shows how much it changed** (green for added lines, red for removed), on a log scale so small fixes stay visible next to big rewrites. Commits whose changes are inside the current diff are highlighted.
 - Tags show as small tag markers. Month and year labels run along the bottom.
+- **Commits that don't change what the diff shows are left out**: ones that only rename the file, change its mode, or convert its line endings. The header says how many are hidden. Uncheck **Content changes only** in the toolbar to put them back on the timeline.
 
 ### The two handles
 
@@ -71,6 +72,7 @@ Clicking the **OLD** or **NEW** label under the timeline focuses that handle.
 | `diffSlider.ignoreTrimWhitespace` | `false` | Ignore leading/trailing whitespace (also a toolbar toggle) |
 | `diffSlider.hideUnchangedRegions` | `false` | Collapse unchanged regions (also a toolbar toggle) |
 | `diffSlider.wordWrap` | `false` | Wrap long lines (also a toolbar toggle) |
+| `diffSlider.contentChangesOnly` | `true` | Hide commits that only rename the file, change its mode or convert its line endings (also the **Content changes only** checkbox) |
 | `diffSlider.showEditorTitleButton` | `true` | Show the button in the editor title bar |
 
 ## Requirements
