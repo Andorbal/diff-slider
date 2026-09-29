@@ -3,7 +3,7 @@
   "displayName": "Diff Slider",
   "description": "Scrub through a file's git history with a two-handle slider and watch the diff update live.",
   "version": "0.1.0",
-  "publisher": "andorbal",
+  "publisher": "AndrewBenz",
   "icon": "media/icon.png",
   "license": "MIT",
   "repository": {
