@@ -51,8 +51,19 @@ DIFF_SLIDER_CODE_SERVER=http://127.0.0.1:8123 npm run test:e2e
 
 Each run creates a throwaway repository and checks: the keybinding, dragging across a rename, opening VS Code's diff editor, live updates while typing, refreshing after an outside `git commit`, restoring after a window reload, and the Timeline and Explorer context menus.
 
-## Packaging
+## Packaging and releases
 
 ```sh
 npm run package      # diff-slider-<version>.vsix
 ```
+
+The **Build** workflow (`.github/workflows/build.yml`) runs the typecheck, unit tests and UI tests on every push to `main` and every pull request, then packages the extension. The `.vsix` is attached to the run as an artifact named `diff-slider-<version>-<sha>`.
+
+To publish a release, bump `version` in `package.json` (and add a `CHANGELOG.md` entry), then push a matching tag:
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The workflow checks that the tag matches `package.json` and creates a GitHub release with the `.vsix` attached.
