@@ -96,7 +96,7 @@ To build it yourself:
 ```sh
 npm install
 npm run package          # creates diff-slider-<version>.vsix
-code --install-extension diff-slider-0.1.0.vsix
+code --install-extension diff-slider-0.2.0.vsix
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development and testing.

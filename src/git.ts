@@ -21,7 +21,7 @@ export class GitError extends Error {
 /** Config overrides that keep user settings from changing the output we parse. */
 const SAFE_CONFIG = ['-c', 'log.showSignature=false', '-c', 'core.quotePath=false', '-c', 'color.ui=false'];
 
-export function runGit(git: string, args: string[], cwd: string): Promise<Buffer> {
+export function runGit(git: string, args: string[], cwd: string, input?: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     let child: ChildProcessWithoutNullStreams;
     try {
@@ -39,6 +39,10 @@ export function runGit(git: string, args: string[], cwd: string): Promise<Buffer
     child.stdout.on('data', (d: Buffer) => out.push(d));
     child.stderr.on('data', (d: Buffer) => errOut.push(d));
     child.on('error', (err) => reject(new GitError(`Failed to run git: ${err.message}`)));
+    if (input !== undefined) {
+      child.stdin.on('error', () => undefined);
+      child.stdin.end(input);
+    }
     child.on('close', (code) => {
       if (code === 0) {
         resolve(Buffer.concat(out));
@@ -125,17 +129,9 @@ const FIELD = '\x1f';
 const RECORD = '\x1e';
 const LOG_FORMAT = `${RECORD}%H${FIELD}%P${FIELD}%an${FIELD}%ae${FIELD}%at${FIELD}%cn${FIELD}%ct${FIELD}%D${FIELD}%B`;
 
-/**
- * Flags that older gits reject: `--diff-merges` needs 2.31, `--ignore-cr-at-eol`
- * 2.16. Line endings are ignored because the diff editor normalizes them, so
- * the line counts match what it shows.
- */
-const OPTIONAL_FLAGS = ['--diff-merges=first-parent', '--ignore-cr-at-eol'];
+const diffMergesSupport = new Map<string, boolean>();
 
-/** Optional flags each git binary has rejected. */
-const unsupportedFlags = new Map<string, Set<string>>();
-
-function historyArgs(q: HistoryQuery, optionalFlags: string[]): string[] {
+function historyArgs(q: HistoryQuery, diffMerges: boolean): string[] {
   const args = [
     'log',
     `--format=${LOG_FORMAT}`,
@@ -147,8 +143,8 @@ function historyArgs(q: HistoryQuery, optionalFlags: string[]): string[] {
     '--no-textconv',
     '--no-ext-diff',
     '-M',
-    ...optionalFlags,
   ];
+  if (diffMerges) args.push('--diff-merges=first-parent');
   if (q.follow) args.push('--follow');
   if (q.firstParent) args.push('--first-parent');
   // `--follow` does not track renames inside commits dropped by `--skip`, so in
@@ -167,26 +163,95 @@ function historyArgs(q: HistoryQuery, optionalFlags: string[]): string[] {
 /** Returns one page of the file's history, oldest commit first. */
 export async function getHistory(git: string, q: HistoryQuery): Promise<HistoryPage> {
   if (!(await hasHead(git, q.root))) return { stops: [], hasMore: false };
-  const unsupported = unsupportedFlags.get(git) ?? new Set<string>();
-  unsupportedFlags.set(git, unsupported);
   let output: string;
-  for (;;) {
-    const flags = OPTIONAL_FLAGS.filter((f) => !unsupported.has(f));
-    try {
-      output = await runGitText(git, historyArgs(q, flags), q.root);
-      break;
-    } catch (err) {
-      // Retry without whichever optional flag this git does not know.
-      const stderr = err instanceof GitError ? err.stderr : '';
-      const rejected = flags.find((f) => stderr.includes(f.split('=')[0]));
-      if (!rejected) throw err;
-      unsupported.add(rejected);
+  const supported = diffMergesSupport.get(git) ?? true;
+  try {
+    output = await runGitText(git, historyArgs(q, supported), q.root);
+    diffMergesSupport.set(git, supported);
+  } catch (err) {
+    // --diff-merges needs git 2.31+; retry without it on older versions.
+    if (supported && err instanceof GitError && /diff-merges/.test(err.stderr)) {
+      diffMergesSupport.set(git, false);
+      output = await runGitText(git, historyArgs(q, false), q.root);
+    } else {
+      throw err;
     }
   }
   let commits = parseLog(output, q.relPath);
   if (q.follow) commits = commits.slice(q.skip);
   const hasMore = commits.length > q.limit;
-  return { stops: commits.slice(0, q.limit).reverse(), hasMore };
+  const stops = commits.slice(0, q.limit).reverse();
+  await markLineEndingOnly(git, q.root, stops);
+  return { stops, hasMore };
+}
+
+const IGNORE_CR = '--ignore-cr-at-eol';
+
+/** Git binaries too old (before 2.16) to ignore line endings. */
+const noIgnoreCr = new Set<string>();
+
+/**
+ * Flags commits whose change to the file is only line endings: the diff editor
+ * normalizes them, so it shows nothing. Asks git for the line counts of just
+ * the commits that could be such a change, this time ignoring line endings.
+ * Any file with a non-zero count changed visibly; git either omits the others
+ * or reports 0/0, depending on its version. Commits git says nothing about
+ * are left alone.
+ */
+async function markLineEndingOnly(git: string, root: string, stops: Stop[]): Promise<void> {
+  // Converting line endings replaces lines one for one.
+  const candidates = stops.filter(
+    (s) =>
+      s.sha &&
+      s.parents?.length &&
+      /^[MRCT]$/.test(s.status ?? '') &&
+      !s.noVisibleChange &&
+      !s.binary &&
+      s.added !== undefined &&
+      s.added > 0 &&
+      s.added === s.deleted,
+  );
+  if (!candidates.length || noIgnoreCr.has(git)) return;
+  const paths = [...new Set(candidates.flatMap((s) => (s.oldPath ? [s.path, s.oldPath] : [s.path])))];
+  // Each line is a commit and the parent to compare with; merges are diffed against their first.
+  const input = candidates.map((s) => `${s.sha} ${s.parents![0]}\n`).join('');
+  const args = ['diff-tree', '--stdin', '--always', '-z', '-r', '--numstat', '-M', IGNORE_CR, '--no-textconv', '--no-ext-diff'];
+  let output: string;
+  try {
+    output = (await runGit(git, [...args, '--', ...paths], root, input)).toString('utf8');
+  } catch (err) {
+    // Only a refinement: without it these commits simply stay on the timeline.
+    if (err instanceof GitError && err.stderr.includes(IGNORE_CR)) noIgnoreCr.add(git);
+    return;
+  }
+  // "<sha>\0" for each commit (--always: even when nothing changed), then
+  // "added\tdeleted\tpath\0" (or "added\tdeleted\t\0old\0new\0") per file.
+  const bySha = new Map(candidates.map((s) => [s.sha!, s]));
+  const seen = new Set<string>();
+  const changed = new Set<string>();
+  let current: Stop | undefined;
+  const tokens = output.split('\0');
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i].replace(/^\n+/, '');
+    const m = /^(-|\d+)\t(-|\d+)\t([\s\S]*)$/.exec(token);
+    if (!m) {
+      current = bySha.get(token.split(' ')[0]);
+      if (current) seen.add(current.id);
+      continue;
+    }
+    let p = m[3];
+    if (p === '') {
+      ++i; // old path
+      p = tokens[++i] ?? '';
+    }
+    if (current && p === current.path && (m[1] !== '0' || m[2] !== '0')) changed.add(current.id);
+  }
+  for (const s of candidates) {
+    if (!seen.has(s.id) || changed.has(s.id)) continue;
+    s.noVisibleChange = true;
+    s.added = 0;
+    s.deleted = 0;
+  }
 }
 
 interface RawEntry {
@@ -265,13 +330,8 @@ export function parseLog(output: string, relPath: string): Stop[] {
     const num = (raw && nums.find((n) => n.path === raw.dstPath)) ?? nums[0];
     const filePath = raw?.dstPath ?? num?.path ?? relPath;
     const deleted = raw?.status === 'D';
-    // Same blob (a pure rename or mode change), or no lines changed once line
-    // endings are ignored; git then prints no numstat line at all.
-    const noVisibleChange =
-      !!raw &&
-      raw.status !== 'A' &&
-      !deleted &&
-      (raw.srcOid === raw.dstOid || (num ? !num.binary && num.added === 0 && num.deleted === 0 : true));
+    // The same blob on both sides: a pure rename or a mode change.
+    const noVisibleChange = !!raw && raw.status !== 'A' && !deleted && raw.srcOid === raw.dstOid;
 
     const stop: Stop = {
       id: sha,
@@ -289,8 +349,8 @@ export function parseLog(output: string, relPath: string): Stop[] {
       committerName: cn,
       commitDate: Number(ct) * 1000,
       refs: decorations ? decorations.split(', ').filter(Boolean) : undefined,
-      added: num ? num.added : noVisibleChange ? 0 : undefined,
-      deleted: num ? num.deleted : noVisibleChange ? 0 : undefined,
+      added: num?.added,
+      deleted: num?.deleted,
       binary: num?.binary || undefined,
       missing: deleted || undefined,
       noVisibleChange: noVisibleChange || undefined,

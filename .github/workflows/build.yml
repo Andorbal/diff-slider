@@ -1,7 +1,7 @@
 name: Build
 
 # Tests the extension and packages it as a .vsix on every push and pull request.
-# Pushing a tag like v0.1.0 also publishes the .vsix as a GitHub release.
+# Pushing a tag like v0.2.0 also publishes the .vsix as a GitHub release.
 on:
   push:
     branches: [main]
