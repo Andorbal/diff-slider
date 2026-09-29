@@ -1,0 +1,173 @@
+{
+  "name": "diff-slider",
+  "displayName": "Diff Slider",
+  "description": "Scrub through a file's git history with a two-handle slider and watch the diff update live.",
+  "version": "0.1.0",
+  "publisher": "andorbal",
+  "icon": "media/icon.png",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/andorbal/diff-slider"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "SCM Providers",
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "git",
+    "history",
+    "diff",
+    "timeline",
+    "compare"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onWebviewPanel:diffSlider.history"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "diffSlider.showHistory",
+        "title": "Show File History Slider",
+        "category": "Diff Slider",
+        "icon": "$(git-compare)"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "diffSlider.showHistory",
+          "when": "resourceScheme == file || activeEditor"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "diffSlider.showHistory",
+          "when": "resourceScheme == file && config.diffSlider.showEditorTitleButton",
+          "group": "navigation@90"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "diffSlider.showHistory",
+          "when": "resourceScheme == file",
+          "group": "3_diffSlider"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "diffSlider.showHistory",
+          "when": "resourceScheme == file && !explorerResourceIsFolder",
+          "group": "3_compare@90"
+        }
+      ],
+      "scm/resourceState/context": [
+        {
+          "command": "diffSlider.showHistory",
+          "when": "scmProvider == git",
+          "group": "navigation@90"
+        }
+      ],
+      "timeline/item/context": [
+        {
+          "command": "diffSlider.showHistory",
+          "when": "timelineItem =~ /git:file:commit\\b/",
+          "group": "1_actions@90"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "diffSlider.showHistory",
+        "key": "ctrl+alt+h",
+        "mac": "ctrl+cmd+h",
+        "when": "editorTextFocus || activeEditor"
+      }
+    ],
+    "configuration": {
+      "title": "Diff Slider",
+      "properties": {
+        "diffSlider.pageSize": {
+          "type": "number",
+          "default": 50,
+          "minimum": 5,
+          "maximum": 1000,
+          "markdownDescription": "How many commits to load at a time. More can always be loaded from the left end of the slider."
+        },
+        "diffSlider.followRenames": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Keep following the file's history across renames (`git log --follow`)."
+        },
+        "diffSlider.firstParentOnly": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Only show commits on the first-parent chain (`git log --first-parent`). Handy for repos that merge feature branches: each merge becomes a single step."
+        },
+        "diffSlider.showStaged": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Add a **Staged** stop between the latest commit and the working copy when the file has staged changes."
+        },
+        "diffSlider.maxFileSizeMB": {
+          "type": "number",
+          "default": 5,
+          "minimum": 0.1,
+          "markdownDescription": "Revisions larger than this (in MB) are not loaded into the diff."
+        },
+        "diffSlider.renderSideBySide": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Show the diff side by side (`true`) or inline (`false`). Also toggled from the panel toolbar."
+        },
+        "diffSlider.ignoreTrimWhitespace": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Ignore leading and trailing whitespace changes. Also toggled from the panel toolbar."
+        },
+        "diffSlider.hideUnchangedRegions": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Collapse long runs of unchanged lines. Also toggled from the panel toolbar."
+        },
+        "diffSlider.wordWrap": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Wrap long lines in the diff. Also toggled from the panel toolbar."
+        },
+        "diffSlider.showEditorTitleButton": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Show the Diff Slider button in the editor title bar."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p webview/tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:ui": "npm run build && playwright test -c test/ui/playwright.config.ts",
+    "test:e2e": "playwright test -c test/e2e/playwright.config.ts",
+    "check": "npm run typecheck && npm test && npm run test:ui",
+    "vscode:prepublish": "node esbuild.mjs --production",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "@types/node": "^22.10.0",
+    "@types/vscode": "~1.90.0",
+    "@vscode/codicons": "0.0.45",
+    "@vscode/vsce": "^4.0.0",
+    "esbuild": "^0.28.2",
+    "monaco-editor": "0.57.0",
+    "typescript": "~5.9.3",
+    "vitest": "^5.0.2"
+  }
+}

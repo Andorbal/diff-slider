@@ -1,0 +1,80 @@
+import * as fs from 'fs';
+import * as http from 'http';
+import type { AddressInfo } from 'net';
+import * as path from 'path';
+import { webviewHtml } from '../../src/webviewHtml';
+import { buildFixture, type FixtureOptions } from './fixture';
+import { THEMES } from './themes';
+
+export interface Scenario {
+  theme?: keyof typeof THEMES;
+  fixture?: FixtureOptions;
+  /** Makes the host answer init with this error. */
+  error?: string;
+  /** Stop id whose content is reported as binary. */
+  binary?: string;
+  contentDelay?: number;
+}
+
+const TYPES: Record<string, string> = {
+  '.js': 'text/javascript',
+  '.css': 'text/css',
+  '.ttf': 'font/ttf',
+  '.map': 'application/json',
+};
+
+function listen(server: http.Server): Promise<number> {
+  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve((server.address() as AddressInfo).port)));
+}
+
+/**
+ * Serves the webview the way VS Code does: the page on one origin, its assets on
+ * another (so CSP and cross-origin worker loading are exercised), with the
+ * same Content-Security-Policy the extension uses and a mock extension host.
+ */
+export async function startHarness() {
+  const dist = path.resolve(__dirname, '../../dist/webview');
+  const mockHost = fs.readFileSync(path.join(__dirname, 'mockHost.js'), 'utf8');
+
+  const assets = http.createServer((req, res) => {
+    const file = path.join(dist, decodeURIComponent(new URL(req.url ?? '/', 'http://x').pathname));
+    if (!file.startsWith(dist) || !fs.existsSync(file)) {
+      res.writeHead(404).end();
+      return;
+    }
+    res.writeHead(200, {
+      'Content-Type': TYPES[path.extname(file)] ?? 'application/octet-stream',
+      'Access-Control-Allow-Origin': '*',
+    });
+    fs.createReadStream(file).pipe(res);
+  });
+  const assetOrigin = `http://127.0.0.1:${await listen(assets)}`;
+
+  const pages = http.createServer((req, res) => {
+    const url = new URL(req.url ?? '/', 'http://x');
+    const scenario: Scenario = JSON.parse(url.searchParams.get('s') ?? '{}');
+    const fixture = buildFixture(scenario.fixture);
+    const theme = THEMES[scenario.theme ?? 'dark'];
+    const nonce = 'harnessnonce';
+    const script = `const __FIXTURE__ = ${JSON.stringify(fixture)};\nconst __SCENARIO__ = ${JSON.stringify(scenario)};\n${mockHost}`;
+    const html = webviewHtml({
+      cspSource: assetOrigin,
+      nonce,
+      asset: (name) => `${assetOrigin}/${name}`,
+      beforeScript: `<script nonce="${nonce}">${script.replace(/<\/script/g, '<\\/script')}</script>`,
+    })
+      .replace('<html lang="en">', `<html lang="en" style="${theme.style}">`)
+      .replace('<body>', `<body class="${theme.bodyClass}">`);
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }).end(html);
+  });
+  // "localhost" vs "127.0.0.1" makes the page and its assets different origins.
+  const pagePort = await listen(pages);
+
+  return {
+    url: (scenario: Scenario = {}) => `http://localhost:${pagePort}/?s=${encodeURIComponent(JSON.stringify(scenario))}`,
+    close: async () => {
+      await new Promise((r) => assets.close(r));
+      await new Promise((r) => pages.close(r));
+    },
+  };
+}

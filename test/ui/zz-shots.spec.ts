@@ -1,0 +1,23 @@
+import { test } from '@playwright/test';
+import { startHarness } from './harness';
+const OUT = '/tmp/claude-0/-home-user-diff-slider/05e3d36d-9b8d-5473-a4ca-8d6e2fbdb52d/scratchpad';
+test('shots', async ({ page }) => {
+  const h = await startHarness();
+  await page.goto(h.url({ theme: 'light' }));
+  await page.waitForSelector('.app.state-ready'); await page.waitForTimeout(800);
+  const t = page.locator('.tl-tick').nth(40); const b = (await t.boundingBox())!;
+  await page.mouse.move(b.x + 2, b.y + 2); await page.waitForTimeout(300);
+  await page.screenshot({ path: OUT + '/light.png' });
+  await page.setViewportSize({ width: 760, height: 600 });
+  await page.mouse.move(0, 700);
+  await page.locator('.tl-more').click({ modifiers: ['Shift'] }); await page.waitForTimeout(600);
+  await page.locator('.toolbar [data-cmd="help"]').click(); await page.waitForTimeout(200);
+  await page.screenshot({ path: OUT + '/narrow.png' });
+  await page.goto(h.url({ fixture: { commits: 0, staged: false } }));
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: OUT + '/empty.png' });
+  await page.goto(h.url({ error: 'notes.txt is not inside a git repository.' }));
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: OUT + '/error.png' });
+  await h.close();
+});

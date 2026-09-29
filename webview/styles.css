@@ -1,0 +1,858 @@
+:root {
+  --ds-old: var(--vscode-charts-red, #f14c4c);
+  --ds-new: var(--vscode-charts-green, #89d185);
+  --ds-added: var(--vscode-charts-green, #89d185);
+  --ds-deleted: var(--vscode-charts-red, #f14c4c);
+  --ds-muted: var(--vscode-descriptionForeground, #999);
+  --ds-border: var(--vscode-panel-border, var(--vscode-widget-border, rgba(128, 128, 128, 0.35)));
+  --ds-accent: var(--vscode-focusBorder, #007fd4);
+  --ds-tl-height: 94px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+body {
+  background: var(--vscode-editor-background);
+  color: var(--vscode-foreground);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size, 13px);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+code {
+  font-family: var(--vscode-editor-font-family, monospace);
+}
+
+.muted {
+  color: var(--ds-muted);
+}
+
+.added {
+  color: var(--ds-added);
+}
+
+.deleted {
+  color: var(--ds-deleted);
+}
+
+.app {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.app.dragging,
+.app.dragging * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
+/* ---------- top bar ---------- */
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px 12px;
+  padding: 4px 8px 4px 12px;
+  min-height: 30px;
+  border-bottom: 1px solid var(--ds-border);
+}
+
+.file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.file-name {
+  font-weight: 600;
+}
+
+.file-dir,
+.file-count {
+  color: var(--ds-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+}
+
+.file-dir {
+  flex-shrink: 1;
+}
+
+.file-count {
+  flex-shrink: 0;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.toolbar .sep {
+  width: 1px;
+  height: 16px;
+  margin: 0 4px;
+  background: var(--ds-border);
+}
+
+.toolbar button,
+.nav button,
+.help-head button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--vscode-icon-foreground, var(--vscode-foreground));
+  cursor: pointer;
+}
+
+.toolbar button:hover,
+.nav button:hover,
+.help-head button:hover {
+  background: var(--vscode-toolbar-hoverBackground, rgba(90, 93, 94, 0.31));
+}
+
+.toolbar button.on {
+  background: var(--vscode-inputOption-activeBackground, rgba(0, 127, 212, 0.4));
+  border-color: var(--vscode-inputOption-activeBorder, transparent);
+  color: var(--vscode-inputOption-activeForeground, inherit);
+}
+
+button:focus-visible,
+.side:focus-visible {
+  outline: 1px solid var(--ds-accent);
+  outline-offset: -1px;
+}
+
+/* ---------- timeline ---------- */
+
+.timeline {
+  position: relative;
+  flex: none;
+  height: var(--ds-tl-height);
+  border-bottom: 1px solid var(--ds-border);
+  background: var(--vscode-sideBar-background, var(--vscode-editor-background));
+}
+
+.tl-scroll {
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.tl-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.tl-scroll::-webkit-scrollbar-thumb {
+  background: var(--vscode-scrollbarSlider-background);
+}
+
+.tl-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--vscode-scrollbarSlider-hoverBackground);
+}
+
+.tl-content {
+  position: relative;
+  height: calc(var(--ds-tl-height) - 6px);
+  min-width: 100%;
+  touch-action: none;
+  cursor: pointer;
+}
+
+.tl-window {
+  position: absolute;
+  top: 8px;
+  height: 52px;
+  background: color-mix(in srgb, var(--ds-accent) 14%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--ds-accent) 35%, transparent);
+  pointer-events: none;
+}
+
+.tl-bars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.tl-bar {
+  position: absolute;
+  top: auto;
+  bottom: calc(100% - 54px);
+  border-radius: 1px 1px 0 0;
+  opacity: 0.4;
+  transition: opacity 80ms linear;
+}
+
+.tl-bar.in {
+  opacity: 0.95;
+}
+
+.tl-bar.unknown {
+  background: var(--ds-muted);
+}
+
+.tl-tag {
+  position: absolute;
+  top: 0;
+  font-size: 11px !important;
+  transform: translateX(-50%);
+  color: var(--vscode-charts-yellow, #cca700);
+}
+
+.tl-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 59px;
+  height: 2px;
+  background: var(--vscode-scrollbarSlider-background, rgba(121, 121, 121, 0.4));
+  pointer-events: none;
+}
+
+.tl-ticks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.tl-tick {
+  position: absolute;
+  top: 60px;
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  border-radius: 50%;
+  background: var(--ds-muted);
+}
+
+.tl-tick.deleted {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--ds-muted);
+}
+
+.tl-tick.staged {
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 1px;
+  background: var(--vscode-charts-yellow, #cca700);
+}
+
+.tl-tick.working {
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+  border-radius: 1px;
+  transform: rotate(45deg);
+  background: var(--vscode-foreground);
+}
+
+.tl-tick.working.dirty {
+  background: var(--vscode-charts-orange, #d18616);
+}
+
+.tl-axis {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.tl-label {
+  position: absolute;
+  top: 72px;
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--ds-muted);
+  white-space: nowrap;
+}
+
+.tl-label.date {
+  padding-left: 5px;
+  border-left: 1px solid color-mix(in srgb, var(--ds-muted) 50%, transparent);
+  transform: translateX(-0.5px);
+}
+
+.tl-label.special.end {
+  transform: translateX(calc(-100% + 8px));
+}
+
+.tl-label.special.start {
+  transform: translateX(-50%);
+}
+
+.tl-label.special {
+  color: var(--vscode-foreground);
+}
+
+.tl-hover {
+  position: absolute;
+  top: 8px;
+  height: 58px;
+  width: 1px;
+  margin-left: -0.5px;
+  background: var(--vscode-foreground);
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.tl-more {
+  /* Pinned to the timeline's left edge (not the scrolling content) so it is always reachable. */
+  position: absolute;
+  z-index: 4;
+  left: 8px;
+  top: 49px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 22px;
+  padding: 0 8px 0 4px;
+  border: 1px solid var(--vscode-button-border, transparent);
+  border-radius: 11px;
+  /* The secondary button colour can be translucent; layer it over a solid backdrop. */
+  background:
+    linear-gradient(
+      var(--vscode-button-secondaryBackground, rgba(90, 93, 94, 0.5)),
+      var(--vscode-button-secondaryBackground, rgba(90, 93, 94, 0.5))
+    ),
+    var(--vscode-sideBar-background, var(--vscode-editor-background));
+  color: var(--vscode-button-secondaryForeground, inherit);
+  box-shadow: 0 0 6px 4px var(--vscode-sideBar-background, var(--vscode-editor-background));
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.tl-more:hover:not(:disabled) {
+  background:
+    linear-gradient(
+      var(--vscode-button-secondaryHoverBackground, rgba(90, 93, 94, 0.7)),
+      var(--vscode-button-secondaryHoverBackground, rgba(90, 93, 94, 0.7))
+    ),
+    var(--vscode-sideBar-background, var(--vscode-editor-background));
+}
+
+.tl-more:disabled {
+  cursor: progress;
+  opacity: 0.8;
+}
+
+.tl-more .dsi {
+  font-size: 14px;
+}
+
+.tl-handle {
+  position: absolute;
+  top: 4px;
+  width: 22px;
+  height: 66px;
+  margin-left: -11px;
+  outline: none;
+  cursor: grab;
+  z-index: 2;
+  --c: var(--ds-new);
+}
+
+.tl-handle.is-old {
+  --c: var(--ds-old);
+}
+
+.tl-handle.is-active {
+  z-index: 3;
+}
+
+.tl-handle-line {
+  position: absolute;
+  left: 10px;
+  top: 2px;
+  width: 2px;
+  height: 50px;
+  border-radius: 1px;
+  background: var(--c);
+  opacity: 0.85;
+}
+
+.tl-handle-line::before {
+  /* little flag at the top so the handles are easy to tell apart */
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 7px;
+  height: 7px;
+  background: var(--c);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+.tl-handle.is-old .tl-handle-line::before {
+  right: 2px;
+  clip-path: polygon(100% 0, 0 50%, 100% 100%);
+}
+
+.tl-handle.is-new .tl-handle-line::before {
+  left: 2px;
+}
+
+.tl-handle.is-same .tl-handle-line::before {
+  display: none;
+}
+
+.tl-handle-knob {
+  position: absolute;
+  left: 3px;
+  top: 48px;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: var(--c);
+  border: 2px solid var(--vscode-editor-background);
+  box-shadow: 0 0 0 1px var(--c), 0 1px 3px rgba(0, 0, 0, 0.35);
+  transition: transform 80ms ease-out;
+}
+
+/* Both handles on the same revision: show both colours so neither seems lost. */
+.tl-handle.is-same .tl-handle-knob {
+  background: linear-gradient(90deg, var(--ds-old) 50%, var(--ds-new) 50%);
+  box-shadow: 0 0 0 1px var(--ds-muted), 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.tl-handle:hover .tl-handle-knob,
+.tl-handle.is-active .tl-handle-knob {
+  transform: scale(1.15);
+}
+
+.tl-handle:focus-visible .tl-handle-knob {
+  box-shadow: 0 0 0 1px var(--c), 0 0 0 3px var(--ds-accent);
+}
+
+.timeline.dragging .tl-handle {
+  cursor: grabbing;
+}
+
+/* ---------- compare bar ---------- */
+
+.compare {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  min-height: 28px;
+  padding: 2px 8px;
+  border-bottom: 1px solid var(--ds-border);
+  font-size: 12px;
+}
+
+.side {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  /* Sized by content so a long commit subject gets more room than "Working copy". */
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 2px 6px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.side:hover {
+  background: var(--vscode-toolbar-hoverBackground, rgba(90, 93, 94, 0.31));
+}
+
+.side > * {
+  flex: none;
+}
+
+.side .side-main {
+  flex: 0 1 auto;
+  min-width: 3ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Author and age give way first when space is short. */
+.side .muted {
+  flex: 0 100 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pill {
+  display: inline-block;
+  padding: 0 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  letter-spacing: 0.04em;
+  color: var(--vscode-editor-background);
+}
+
+.pill.old {
+  background: var(--ds-old);
+}
+
+.pill.new {
+  background: var(--ds-new);
+}
+
+.compare-arrow {
+  flex: none;
+  color: var(--ds-muted);
+}
+
+.stats {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  margin-left: auto;
+  padding-left: 8px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.nav {
+  display: flex;
+  flex: none;
+}
+
+/* ---------- diff ---------- */
+
+.diff-host {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.diff {
+  position: absolute;
+  inset: 0;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  color: var(--ds-muted);
+  background: var(--vscode-editor-background);
+}
+
+/* ---------- states ---------- */
+
+.status {
+  display: none;
+}
+
+.state-loading .status,
+.state-error .status,
+.state-empty .status {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  color: var(--ds-muted);
+}
+
+.state-error .status .dsi {
+  color: var(--vscode-errorForeground, #f48771);
+  font-size: 20px;
+}
+
+.state-error .status p {
+  margin: 0 0 10px;
+  color: var(--vscode-foreground);
+}
+
+.status button {
+  padding: 4px 12px;
+  border: none;
+  border-radius: 2px;
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  cursor: pointer;
+}
+
+.status button:hover {
+  background: var(--vscode-button-hoverBackground);
+}
+
+.state-loading .timeline,
+.state-error .timeline,
+.state-empty .timeline,
+.state-loading .compare,
+.state-error .compare,
+.state-empty .compare,
+.state-loading .diff-host,
+.state-error .diff-host,
+.state-empty .diff-host {
+  display: none;
+}
+
+.state-loading .toolbar,
+.state-error .toolbar {
+  visibility: hidden;
+}
+
+/* ---------- commit card ---------- */
+
+.card {
+  position: fixed;
+  z-index: 50;
+  box-sizing: border-box;
+  width: min(440px, calc(100vw - 16px));
+  padding: 8px 10px;
+  border: 1px solid var(--vscode-editorHoverWidget-border, var(--ds-border));
+  border-radius: 4px;
+  background: var(--vscode-editorHoverWidget-background, var(--vscode-editorWidget-background));
+  color: var(--vscode-editorHoverWidget-foreground, var(--vscode-foreground));
+  box-shadow: 0 2px 8px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.36));
+  font-size: 12px;
+  line-height: 1.45;
+  pointer-events: none;
+}
+
+.card.interactive {
+  pointer-events: auto;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: var(--arrow-x, 50%);
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  background: inherit;
+  border-left: 1px solid var(--vscode-editorHoverWidget-border, var(--ds-border));
+  border-top: 1px solid var(--vscode-editorHoverWidget-border, var(--ds-border));
+  transform: rotate(45deg);
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.card-head .sha {
+  color: var(--vscode-textLink-foreground);
+}
+
+.card-role {
+  margin-left: auto;
+  padding: 0 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  color: var(--vscode-editor-background);
+  background: var(--ds-muted);
+}
+
+.card-role.old {
+  background: var(--ds-old);
+}
+
+.card-role.new {
+  background: var(--ds-new);
+}
+
+.ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 5px;
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 16px;
+  background: var(--vscode-badge-background, rgba(77, 77, 77, 0.7));
+  color: var(--vscode-badge-foreground, inherit);
+}
+
+.ref.tag {
+  background: color-mix(in srgb, var(--vscode-charts-yellow, #cca700) 30%, transparent);
+  color: inherit;
+}
+
+.ref .dsi {
+  font-size: 11px;
+}
+
+.card-subject {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 4px;
+  overflow-wrap: anywhere;
+}
+
+.card-body {
+  margin-bottom: 6px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--ds-muted);
+  max-height: 9.5em;
+  overflow: hidden;
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ds-muted);
+}
+
+.card-meta .dsi {
+  font-size: 13px;
+}
+
+.card-meta.file {
+  margin-top: 2px;
+  flex-wrap: wrap;
+}
+
+.card-stats {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.card-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.card:not(.interactive) .card-actions {
+  display: none;
+}
+
+.card-actions button {
+  padding: 2px 8px;
+  border: 1px solid var(--vscode-button-border, transparent);
+  border-radius: 2px;
+  background: var(--vscode-button-secondaryBackground, rgba(90, 93, 94, 0.5));
+  color: var(--vscode-button-secondaryForeground, inherit);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.card-actions button:hover {
+  background: var(--vscode-button-secondaryHoverBackground, rgba(90, 93, 94, 0.7));
+}
+
+/* ---------- help & toast ---------- */
+
+.help {
+  position: absolute;
+  top: 34px;
+  right: 8px;
+  z-index: 60;
+  width: 380px;
+  max-width: calc(100vw - 16px);
+  padding: 8px 12px 10px;
+  border: 1px solid var(--vscode-editorWidget-border, var(--ds-border));
+  border-radius: 4px;
+  background: var(--vscode-editorWidget-background);
+  color: var(--vscode-editorWidget-foreground, var(--vscode-foreground));
+  box-shadow: 0 2px 8px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.36));
+  font-size: 12px;
+}
+
+.help-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.help table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.help td {
+  padding: 2px 0;
+  vertical-align: top;
+}
+
+.help td:first-child {
+  width: 42%;
+  padding-right: 8px;
+  white-space: nowrap;
+}
+
+.help p {
+  margin: 8px 0 0;
+  color: var(--ds-muted);
+}
+
+kbd {
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 11px;
+  padding: 0 4px;
+  border: 1px solid var(--vscode-keybindingLabel-border, var(--ds-border));
+  border-bottom-color: var(--vscode-keybindingLabel-bottomBorder, var(--ds-border));
+  border-radius: 3px;
+  background: var(--vscode-keybindingLabel-background, transparent);
+  color: var(--vscode-keybindingLabel-foreground, inherit);
+}
+
+.toast {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 60;
+  max-width: 420px;
+  padding: 8px 12px;
+  border: 1px solid var(--vscode-notifications-border, var(--ds-border));
+  border-radius: 4px;
+  background: var(--vscode-notifications-background, var(--vscode-editorWidget-background));
+  color: var(--vscode-notifications-foreground, inherit);
+  box-shadow: 0 2px 8px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.36));
+}
