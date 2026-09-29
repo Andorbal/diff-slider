@@ -1,0 +1,88 @@
+name: Build
+
+# Tests the extension and packages it as a .vsix on every push and pull request.
+# Pushing a tag like v0.1.0 also publishes the .vsix as a GitHub release.
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Test and package
+    runs-on: ubuntu-latest
+    outputs:
+      artifact: ${{ steps.meta.outputs.artifact }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Work out the package name
+        id: meta
+        run: |
+          version=$(node -p "require('./package.json').version")
+          echo "artifact=diff-slider-${version}-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_REF" == refs/tags/v* && "$GITHUB_REF_NAME" != "v${version}" ]]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match package.json version ${version}"
+            exit 1
+          fi
+
+      - run: npm run typecheck
+
+      - run: npm test
+
+      - name: Install Chromium for the UI tests
+        run: npx playwright install --with-deps chromium
+
+      - run: npm run test:ui
+
+      - name: Package
+        # Runs the production build (vscode:prepublish) and writes diff-slider-<version>.vsix.
+        run: npm run package
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.meta.outputs.artifact }}
+          path: '*.vsix'
+          if-no-files-found: error
+
+      - name: Upload UI test traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-test-results
+          path: .test-results/
+          if-no-files-found: ignore
+
+  release:
+    name: Publish GitHub release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.artifact }}
+          path: vsix
+
+      - name: Create the release with the .vsix attached
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" vsix/*.vsix --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes

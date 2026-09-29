@@ -85,7 +85,11 @@ Clicking the **OLD** or **NEW** label under the timeline focuses that handle.
 - Binary files, and revisions over `diffSlider.maxFileSizeMB`, show a message instead of a diff.
 - Merge commits are compared against their first parent.
 
-## Installing from source
+## Installing
+
+Download the `.vsix` from the [latest release](https://github.com/Andorbal/diff-slider/releases/latest), or from the artifacts of any [Build workflow run](https://github.com/Andorbal/diff-slider/actions/workflows/build.yml), then run `code --install-extension diff-slider-<version>.vsix`.
+
+To build it yourself:
 
 ```sh
 npm install
