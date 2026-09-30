@@ -4,7 +4,7 @@
 !CHANGELOG.md
 !LICENSE
 !THIRD_PARTY_NOTICES.md
-!media/**
+!media/*
 !dist/extension.js
 !dist/webview/**
 dist/**/*.map
