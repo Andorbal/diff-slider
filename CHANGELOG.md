@@ -5,6 +5,7 @@
 - Fixed the **Content changes only** checkbox doing nothing, and clicking it failing with "diffSlider.contentChangesOnly is not a registered configuration", after the extension was reinstalled over the same version while VS Code was open. VS Code keeps running the previous build until the window is reloaded, but a panel opened in the meantime loads the new one. The panel now notices this and asks you to reload the window, and it disables any control the running build can't save instead of failing.
 - Toggling **Content changes only** when no loaded commit is a pure rename, mode change or line-ending conversion now says there is nothing to hide, instead of seeming to do nothing.
 - The commit card shows **renamed from …**, **file added**, **file deleted** and **merge commit** again. A style meant for the panel's loading and error messages was hiding them.
+- Making the panel narrower, for example by opening the file beside it, keeps the newest end of the timeline and its handles in view instead of jumping to the oldest commits.
 - The dates along the timeline follow when each commit landed (its commit date) rather than when it was written, so they no longer jump back and forth in histories with merged or rebased branches.
 
 ## 0.2.0

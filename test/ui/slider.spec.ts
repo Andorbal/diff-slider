@@ -184,6 +184,26 @@ test('the card says when a commit renamed the file', async ({ page }) => {
   expect(problems).toEqual([]);
 });
 
+test('the newest end stays in view when the panel gets narrower or wider', async ({ page }) => {
+  const problems = await open(page);
+  await waitForDiff(page);
+  await expect(page.locator('.tl-tick.working')).toBeInViewport();
+  // Like opening the file beside the slider: the timeline no longer fits and scrolls.
+  await page.setViewportSize({ width: 560, height: 800 });
+  await expect.poll(() => page.locator('.tl-scroll').evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
+  await expect(page.locator('.tl-tick.working')).toBeInViewport();
+  await expect(page.locator('.tl-handle.is-old .tl-handle-knob')).toBeInViewport();
+  // Scrolled somewhere in the middle, a resize keeps that spot the same distance from the right edge.
+  await page.locator('.tl-scroll').evaluate((el) => (el.scrollLeft = el.scrollWidth - el.clientWidth - 150));
+  const gap = () => page.locator('.tl-scroll').evaluate((el) => Math.round(el.scrollWidth - el.scrollLeft - el.clientWidth));
+  await expect.poll(gap).toBe(150);
+  await page.setViewportSize({ width: 480, height: 800 });
+  await expect.poll(gap).toBe(150);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect(page.locator('.tl-tick.working')).toBeInViewport();
+  expect(problems).toEqual([]);
+});
+
 test('the Older button stays reachable when the timeline is scrolled to the newest end', async ({ page }) => {
   await open(page);
   await page.locator('.tl-more').click();
