@@ -10,6 +10,7 @@ import {
   type Stop,
   type WebviewMessage,
 } from '../src/shared/protocol';
+import { BUILD_ID } from '../src/shared/build';
 import { Card, type CardRole } from './card';
 import { DiffView, type DiffStats, type Reveal } from './diffView';
 import { escapeHtml, plural, relativeTime, stopLabel } from './format';
@@ -23,6 +24,14 @@ export interface HostApi {
 }
 
 const MAX_CACHE = 200;
+
+const DEFAULT_OPTIONS: DiffOptions = {
+  renderSideBySide: true,
+  ignoreTrimWhitespace: false,
+  hideUnchangedRegions: false,
+  wordWrap: false,
+  contentChangesOnly: true,
+};
 
 const SHORTCUTS: [string, string][] = [
   ['← / →', 'Move the focused handle one commit'],
@@ -47,7 +56,18 @@ export class App {
   private readonly card: Card;
   private diff?: DiffView;
   private readonly el: Record<
-    'fileName' | 'fileDir' | 'fileCount' | 'oldSide' | 'newSide' | 'stats' | 'diffHost' | 'overlay' | 'status' | 'help' | 'toast',
+    | 'fileName'
+    | 'fileDir'
+    | 'fileCount'
+    | 'notice'
+    | 'oldSide'
+    | 'newSide'
+    | 'stats'
+    | 'diffHost'
+    | 'overlay'
+    | 'status'
+    | 'help'
+    | 'toast',
     HTMLElement
   >;
 
@@ -57,13 +77,9 @@ export class App {
   /** The stops on the timeline: `allStops`, minus hidden commits. */
   private stops: Stop[] = [];
   private selection: [string, string] = [WORKING_ID, WORKING_ID];
-  private options: DiffOptions = {
-    renderSideBySide: true,
-    ignoreTrimWhitespace: false,
-    hideUnchangedRegions: false,
-    wordWrap: false,
-    contentChangesOnly: true,
-  };
+  private options: DiffOptions = { ...DEFAULT_OPTIONS };
+  /** The options the extension host reported, which are the ones it can save. */
+  private hostOptions = new Set(Object.keys(DEFAULT_OPTIONS));
   private hasMore = false;
   private loadingMore = false;
   private requestSeq = 0;
@@ -109,6 +125,7 @@ export class App {
           <button data-cmd="help" title="Keyboard shortcuts (?)"><span class="dsi dsi-keyboard"></span></button>
         </div>
       </header>
+      <div class="notice" role="alert" hidden></div>
       <div class="timeline-slot"></div>
       <div class="compare">
         <button class="side old" data-cmd="focusOld" title="Focus the old handle"></button>
@@ -133,6 +150,7 @@ export class App {
       fileName: q('.file-name'),
       fileDir: q('.file-dir'),
       fileCount: q('.file-count'),
+      notice: q('.notice'),
       oldSide: q('.side.old'),
       newSide: q('.side.new'),
       stats: q('.stats'),
@@ -229,8 +247,10 @@ export class App {
   private init(payload: InitPayload): void {
     const sameFile = this.payload?.resource === payload.resource;
     this.payload = payload;
-    this.options = payload.options;
+    this.options = { ...DEFAULT_OPTIONS, ...payload.options };
+    this.hostOptions = new Set(Object.keys(payload.options));
     this.renderToggles();
+    this.renderNotice(payload.build);
     this.el.fileName.textContent = payload.fileName;
     const dir = payload.relPath.includes('/') ? payload.relPath.slice(0, payload.relPath.lastIndexOf('/')) : '';
     this.el.fileDir.textContent = [payload.repoName, dir].filter(Boolean).join(' / ');
@@ -444,6 +464,21 @@ export class App {
       : '';
   }
 
+  /**
+   * The host comes from another build when the extension was reinstalled over the
+   * same version without reloading: VS Code keeps running the old host (and its
+   * settings), while this panel loaded the new files.
+   */
+  private renderNotice(hostBuild: string | undefined): void {
+    this.el.notice.hidden = hostBuild === BUILD_ID;
+    if (this.el.notice.hidden) return;
+    // Hosts that send their build also know how to reload the window.
+    const action = hostBuild
+      ? '<button data-cmd="reloadWindow">Reload Window</button>'
+      : '<span>Run <strong>Developer: Reload Window</strong> to finish.</span>';
+    this.el.notice.innerHTML = `<span class="dsi dsi-warning"></span><span class="notice-text">Diff Slider was updated while this window was open. Reload the window so that everything works.</span>${action}`;
+  }
+
   private sideHtml(stop: Stop | undefined, role: 'old' | 'new'): string {
     const pill = `<span class="pill ${role}">${role.toUpperCase()}</span>`;
     if (!stop) return pill;
@@ -485,13 +520,15 @@ export class App {
   }
 
   private renderToggles(): void {
-    this.root.querySelectorAll<HTMLElement>('[data-toggle]').forEach((b) => {
+    this.root.querySelectorAll<HTMLButtonElement>('button[data-toggle]').forEach((b) => {
       const key = b.dataset.toggle as keyof DiffOptions;
       b.setAttribute('aria-pressed', String(!!this.options[key]));
       b.classList.toggle('on', !!this.options[key]);
+      b.disabled = !this.hostOptions.has(key);
     });
     this.root.querySelectorAll<HTMLInputElement>('input[data-option]').forEach((input) => {
       input.checked = !!this.options[input.dataset.option as keyof DiffOptions];
+      input.disabled = !this.hostOptions.has(input.dataset.option!);
     });
   }
 
@@ -529,15 +566,25 @@ export class App {
   }
 
   private setOption(key: keyof DiffOptions, value: boolean): void {
+    // The host would fail to save an option it doesn't know (see renderNotice).
+    if (!this.hostOptions.has(key)) return;
     this.applyOptions({ ...this.options, [key]: value });
     this.post({ type: 'setOption', key, value });
+    const commits = this.allStops.filter((s) => s.kind === 'commit');
+    if (key === 'contentChangesOnly' && commits.length && !commits.some((s) => s.noVisibleChange)) {
+      this.toast(
+        `Nothing to ${value ? 'hide' : 'show'}: every ${this.hasMore ? 'loaded ' : ''}commit changes what the diff shows. ` +
+          'Only commits that just rename the file, change its mode or convert its line endings are hidden.',
+      );
+    }
   }
 
-  private applyOptions(options: DiffOptions): void {
-    const refilter = options.contentChangesOnly !== this.options.contentChangesOnly;
-    this.options = options;
+  private applyOptions(options: Partial<DiffOptions>): void {
+    const next = { ...this.options, ...options };
+    const refilter = next.contentChangesOnly !== this.options.contentChangesOnly;
+    this.options = next;
     this.renderToggles();
-    this.diff?.setOptions(options);
+    this.diff?.setOptions(next);
     if (refilter) this.refilter();
   }
 
@@ -568,6 +615,9 @@ export class App {
         break;
       case 'refresh':
         this.post({ type: 'refresh' });
+        break;
+      case 'reloadWindow':
+        this.post({ type: 'reloadWindow' });
         break;
       case 'help':
         this.el.help.hidden = !this.el.help.hidden;

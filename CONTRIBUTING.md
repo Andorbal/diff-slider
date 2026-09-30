@@ -9,7 +9,7 @@
 | `src/fileHistory.ts`, `src/git.ts` | Git access (`git log --follow`, a long-lived `git cat-file --batch`). No `vscode` imports, so they are tested against real repositories |
 | `src/shared/protocol.ts` | Messages between the extension and the webview |
 | `webview/` | The panel UI: `slider.ts` (timeline and handles), `sliderModel.ts` (pure layout/selection logic), `diffView.ts` (Monaco diff editor), `card.ts` (commit popup), `app.ts` (wiring) |
-| `esbuild.mjs` | Bundles the extension, the webview (with Monaco) and Monaco's diff worker into `dist/` |
+| `esbuild.mjs` | Bundles the extension, the webview (with Monaco) and Monaco's diff worker into `dist/`, stamping the extension and webview with the same build id (`src/shared/build.ts`) so a panel notices when VS Code is still running another build |
 
 ## Build and run
 
@@ -40,7 +40,7 @@ The UI tests (`test/ui`) serve the built webview the way VS Code does: the page 
 npm install --prefix /tmp/cs code-server
 
 # Point an extensions directory at this checkout.
-mkdir -p /tmp/cs-ext && ln -sfn "$PWD" /tmp/cs-ext/AndrewBenz.diff-slider-0.2.0
+mkdir -p /tmp/cs-ext && ln -sfn "$PWD" /tmp/cs-ext/AndrewBenz.diff-slider-0.2.1
 
 npm run build
 /tmp/cs/node_modules/.bin/code-server --auth none --bind-addr 127.0.0.1:8123 \
@@ -49,7 +49,7 @@ npm run build
 DIFF_SLIDER_CODE_SERVER=http://127.0.0.1:8123 npm run test:e2e
 ```
 
-Each run creates a throwaway repository and checks: the keybinding, dragging across a rename, opening VS Code's diff editor, live updates while typing, refreshing after an outside `git commit`, restoring after a window reload, and the Timeline and Explorer context menus.
+Each run creates a throwaway repository and checks: the keybinding, dragging across a rename, saving the **Content changes only** setting, opening VS Code's diff editor, live updates while typing, refreshing after an outside `git commit`, restoring after a window reload, and the Timeline and Explorer context menus.
 
 ## Packaging and releases
 

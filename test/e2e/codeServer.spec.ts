@@ -157,6 +157,26 @@ test.describe.serial('Diff Slider in VS Code', () => {
     await expect(f.locator('.stats')).toContainText('11 commits');
   });
 
+  test('the Content changes only checkbox is saved in the user settings', async () => {
+    const f = await slider();
+    const box = f.locator('input[data-option="contentChangesOnly"]');
+    await expect(box).toBeChecked();
+    await expect(f.locator('.notice')).toBeHidden();
+    await f.locator('label.check').click();
+    await expect(box).not.toBeChecked();
+    // No commit here is a pure rename, so the timeline stays the same and the panel says why.
+    await expect(f.locator('.toast')).toContainText('Nothing to show');
+    await expect(f.locator('.tl-tick')).toHaveCount(14);
+    await runCommand('Preferences: Open User Settings (JSON)');
+    await expect(page.locator('.editor-instance .view-lines')).toContainText('"diffSlider.contentChangesOnly": false');
+    await page.keyboard.press('Control+W');
+    await page.locator('.tab', { hasText: 'History: request.ts' }).click();
+    await (await slider()).locator('label.check').click();
+    await expect(box).toBeChecked();
+    // VS Code reports failed settings writes (such as an unregistered setting) as notifications.
+    await expect(page.locator('.notifications-toasts', { hasText: 'Diff Slider' })).toHaveCount(0);
+  });
+
   test('opens the same comparison in the VS Code diff editor', async () => {
     const f = await slider();
     await f.locator('[data-cmd="openDiff"]').click();

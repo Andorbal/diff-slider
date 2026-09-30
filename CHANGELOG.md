@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1
+
+- Fixed the **Content changes only** checkbox doing nothing, and clicking it failing with "diffSlider.contentChangesOnly is not a registered configuration", after the extension was reinstalled over the same version while VS Code was open. VS Code keeps running the previous build until the window is reloaded, but a panel opened in the meantime loads the new one. The panel now notices this and asks you to reload the window, and it disables any control the running build can't save instead of failing.
+- Toggling **Content changes only** when no loaded commit is a pure rename, mode change or line-ending conversion now says there is nothing to hide, instead of seeming to do nothing.
+
 ## 0.2.0
 
 - Commits that don't change what the diff shows (renaming the file, changing its mode, or converting its line endings) are hidden from the timeline. Uncheck **Content changes only** in the toolbar, or set `diffSlider.contentChangesOnly` to `false`, to show them.

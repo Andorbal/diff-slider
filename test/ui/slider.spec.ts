@@ -359,6 +359,8 @@ test('commits without a visible change are left off the timeline until unchecked
   await waitForDiff(page);
   const box = page.locator('input[data-option="contentChangesOnly"]');
   await expect(box).toBeChecked();
+  await expect(box).toBeEnabled();
+  await expect(page.locator('.notice')).toBeHidden();
   await expect(page.locator('.tl-tick')).toHaveCount(52 - HIDDEN.length);
   await expect(page.locator('.file-count')).toHaveText('47 commits loaded (3 hidden)');
   // The host picked the latest commit, which is hidden, so the handle sits on the
@@ -388,6 +390,59 @@ test('commits without a visible change are left off the timeline until unchecked
   await box.focus();
   await page.keyboard.press('[');
   expect(await debug(page, (d) => d.selection())).toEqual([commitAt(116).id, STAGED_ID]);
+  expect(problems).toEqual([]);
+});
+
+test('says so when there is nothing for the checkbox to hide', async ({ page }) => {
+  const problems = await open(page);
+  await waitForDiff(page);
+  await page.locator('label.check').click();
+  await expect(page.locator('input[data-option="contentChangesOnly"]')).not.toBeChecked();
+  await expect(page.locator('.toast')).toBeVisible();
+  await expect(page.locator('.toast')).toContainText('Nothing to show: every loaded commit changes what the diff shows.');
+  await expect(page.locator('.tl-tick')).toHaveCount(52);
+  // The choice is still saved.
+  expect((await sent(page)).filter((m) => m.type === 'setOption')).toEqual([
+    { type: 'setOption', key: 'contentChangesOnly', value: false },
+  ]);
+  expect(problems).toEqual([]);
+});
+
+// Reinstalling the extension over the same version while VS Code runs leaves the old
+// extension host running; panels opened afterwards load the new webview. The old host
+// has no build stamp and doesn't know (or register) the newer options.
+test('a host from an older build: the panel asks for a reload and never sends options that host cannot save', async ({ page }) => {
+  const problems = await open(page, { build: null, unknownOptions: ['contentChangesOnly'], fixture: { noVisibleChange: HIDDEN } });
+  await waitForDiff(page);
+  const notice = page.locator('.notice');
+  await expect(notice).toBeVisible();
+  await expect(notice).toContainText('Diff Slider was updated while this window was open.');
+  await expect(notice).toContainText('Run Developer: Reload Window');
+  // That host can't reload the window for us, so there is no button.
+  await expect(notice.locator('button')).toHaveCount(0);
+
+  const box = page.locator('input[data-option="contentChangesOnly"]');
+  await expect(box).toBeDisabled();
+  await expect(box).toBeChecked();
+  await page.locator('label.check').click({ force: true });
+  await expect(box).toBeChecked();
+
+  // Options the old host knows still work.
+  await page.locator('[data-toggle="wordWrap"]').click();
+  await expect(page.locator('[data-toggle="wordWrap"]')).toHaveAttribute('aria-pressed', 'true');
+  expect((await sent(page)).filter((m) => m.type === 'setOption')).toEqual([{ type: 'setOption', key: 'wordWrap', value: true }]);
+  await expect(page.locator('.toast')).toBeHidden();
+  expect(problems).toEqual([]);
+});
+
+test('a host from another build that knows how: the notice reloads the window', async ({ page }) => {
+  const problems = await open(page, { build: '0.2.0+0123abcd' });
+  await waitForDiff(page);
+  const notice = page.locator('.notice');
+  await expect(notice).toBeVisible();
+  await expect(page.locator('input[data-option="contentChangesOnly"]')).toBeEnabled();
+  await notice.getByRole('button', { name: 'Reload Window' }).click();
+  expect((await sent(page)).filter((m) => m.type === 'reloadWindow')).toEqual([{ type: 'reloadWindow' }]);
   expect(problems).toEqual([]);
 });
 

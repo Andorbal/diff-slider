@@ -91,12 +91,14 @@ Clicking the **OLD** or **NEW** label under the timeline focuses that handle.
 
 Download the `.vsix` from the [latest release](https://github.com/Andorbal/diff-slider/releases/latest), or from the artifacts of any [Build workflow run](https://github.com/Andorbal/diff-slider/actions/workflows/build.yml), then run `code --install-extension diff-slider-<version>.vsix`.
 
+Builds from the same release share a version number, and VS Code keeps running the old build until you reload the window. If a panel opened after installing says **Diff Slider was updated while this window was open**, reload the window.
+
 To build it yourself:
 
 ```sh
 npm install
 npm run package          # creates diff-slider-<version>.vsix
-code --install-extension diff-slider-0.2.0.vsix
+code --install-extension diff-slider-0.2.1.vsix
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development and testing.
