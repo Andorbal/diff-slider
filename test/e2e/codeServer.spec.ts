@@ -82,14 +82,20 @@ async function slider(): Promise<FrameLocator> {
   return outer.contentFrame().frameLocator('#active-frame');
 }
 
-/** Types into the quick input and waits until the top entry matches `expected` before accepting. */
+/** Types into the quick input, waits for an entry matching `expected`, and accepts it. */
 async function pick(open: string, text: string, expected: RegExp, key = 'Enter') {
   await page.keyboard.press(open);
   await page.keyboard.type(text);
-  // File search can take a while right after the server starts.
-  await expect(page.locator('.quick-input-list .monaco-list-row').first()).toHaveAttribute('aria-label', expected, {
-    timeout: 20_000,
-  });
+  const rows = page.locator('.quick-input-list .monaco-list-row');
+  const labels = () => rows.evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') ?? ''));
+  // File search can take a while right after the server starts, and recently opened
+  // editors (such as the "History:" panel of the same file) can be listed above it.
+  await expect.poll(async () => (await labels()).some((l) => expected.test(l)), { timeout: 20_000 }).toBe(true);
+  const focused = rows.and(page.locator('.focused'));
+  for (let i = 0; i < 10 && !expected.test((await focused.getAttribute('aria-label')) ?? ''); i++) {
+    await page.keyboard.press('ArrowDown');
+  }
+  await expect(focused).toHaveAttribute('aria-label', expected);
   await page.keyboard.press(key);
 }
 
@@ -189,10 +195,16 @@ test.describe.serial('Diff Slider in VS Code', () => {
   test('typing in the file updates the working copy side live', async () => {
     await quickOpen('src/request.ts', 'Control+Enter'); // open to the side, slider stays visible
     await expect(page.locator('.editor-group-container')).toHaveCount(2);
-    // The file opened in a new, active group next to the slider; type into it.
-    await page.locator('.editor-group-container.active .monaco-editor .view-lines').first().click();
+    // The file opened in a new, active group next to the slider; type into it. The layout can
+    // still be settling (VS Code may open its Chat panel on first run), so click until it has focus.
+    const editor = page.locator('.editor-group-container.active .monaco-editor').first();
+    await expect(async () => {
+      await editor.locator('.view-lines').click();
+      await expect(editor).toHaveClass(/\bfocused\b/, { timeout: 1000 });
+    }).toPass();
     await page.keyboard.press('Control+End');
     await page.keyboard.type('\n// typed live');
+    await expect(editor.locator('.view-lines')).toContainText('typed live');
     const f = await slider();
     await expect(f.locator('.editor.modified')).toContainText('typed live');
     await expect(f.locator('.side.new')).toContainText('unsaved changes');
