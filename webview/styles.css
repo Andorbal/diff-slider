@@ -846,7 +846,8 @@ button:focus-visible,
   font-size: 13px;
 }
 
-.card-meta.file {
+/* Not "file" or "status": those classes belong to the top bar and the loading/error state. */
+.card-meta.card-file {
   margin-top: 2px;
   flex-wrap: wrap;
 }

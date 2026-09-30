@@ -169,6 +169,21 @@ test('Older button loads a page; shift-click loads everything', async ({ page })
   await expect(page.locator('.tl-tick').nth(19)).toBeInViewport();
 });
 
+test('the card says when a commit renamed the file', async ({ page }) => {
+  const problems = await open(page);
+  await page.locator('.tl-more').click({ modifiers: ['Shift'] });
+  await expect(page.locator('.tl-tick')).toHaveCount(122);
+  const tick = page.locator('.tl-tick').nth(30); // the fixture renames src/run.ts here
+  await tick.scrollIntoViewIfNeeded();
+  const { x, y } = await tickCenter(page, 30);
+  await page.mouse.move(x, y);
+  const card = page.locator('.card');
+  await expect(card).toBeVisible();
+  // Visible, not just present: the card's labels once shared a class that hid them.
+  await expect(card.getByText('renamed from src/run.ts')).toBeVisible();
+  expect(problems).toEqual([]);
+});
+
 test('the Older button stays reachable when the timeline is scrolled to the newest end', async ({ page }) => {
   await open(page);
   await page.locator('.tl-more').click();
