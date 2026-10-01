@@ -7,6 +7,7 @@
 - The commit card shows **renamed from …**, **file added**, **file deleted** and **merge commit** again. A style meant for the panel's loading and error messages was hiding them.
 - Making the panel narrower, for example by opening the file beside it, keeps the newest end of the timeline and its handles in view instead of jumping to the oldest commits.
 - The dates along the timeline follow when each commit landed (its commit date) rather than when it was written, so they no longer jump back and forth in histories with merged or rebased branches.
+- The README, which is also the extension's page in VS Code, shows the slider in action.
 
 ## 0.2.0
 

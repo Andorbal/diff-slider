@@ -75,11 +75,13 @@ npm run package      # diff-slider-<version>.vsix
 
 The **Build** workflow (`.github/workflows/build.yml`) runs the typecheck, unit tests and UI tests on every push to `main` and every pull request, then packages the extension. The `.vsix` is attached to the run as an artifact named `diff-slider-<version>-<sha>`.
 
-To publish a release, bump `version` in `package.json` (and add a `CHANGELOG.md` entry), then push a matching tag:
+To publish a release, bump the version (`npm version <x.y.z> --no-git-tag-version` updates `package.json` and `package-lock.json`), add a `CHANGELOG.md` entry, and once that is on `main`, push a matching tag:
 
 ```sh
-git tag v0.2.0
-git push origin v0.2.0
+git tag v0.2.1
+git push origin v0.2.1
 ```
+
+Give every release its own version. VS Code keeps running an installed build until the window reloads, and installing another build of the same version replaces its files in place; the panel then asks for a reload.
 
 The workflow checks that the tag matches `package.json` and creates a GitHub release with the `.vsix` attached.
