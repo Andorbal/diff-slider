@@ -9,7 +9,8 @@
 | `src/fileHistory.ts`, `src/git.ts` | Git access (`git log --follow`, a long-lived `git cat-file --batch`). No `vscode` imports, so they are tested against real repositories |
 | `src/shared/protocol.ts` | Messages between the extension and the webview |
 | `webview/` | The panel UI: `slider.ts` (timeline and handles), `sliderModel.ts` (pure layout/selection logic), `diffView.ts` (Monaco diff editor), `card.ts` (commit popup), `app.ts` (wiring) |
-| `esbuild.mjs` | Bundles the extension, the webview (with Monaco) and Monaco's diff worker into `dist/` |
+| `test/demo/` | Records the animations in the README (`npm run demos`) |
+| `esbuild.mjs` | Bundles the extension, the webview (with Monaco) and Monaco's diff worker into `dist/`, stamping the extension and webview with the same build id (`src/shared/build.ts`) so a panel notices when VS Code is still running another build |
 
 ## Build and run
 
@@ -40,7 +41,7 @@ The UI tests (`test/ui`) serve the built webview the way VS Code does: the page 
 npm install --prefix /tmp/cs code-server
 
 # Point an extensions directory at this checkout.
-mkdir -p /tmp/cs-ext && ln -sfn "$PWD" /tmp/cs-ext/AndrewBenz.diff-slider-0.2.0
+mkdir -p /tmp/cs-ext && ln -sfn "$PWD" /tmp/cs-ext/AndrewBenz.diff-slider-0.2.1
 
 npm run build
 /tmp/cs/node_modules/.bin/code-server --auth none --bind-addr 127.0.0.1:8123 \
@@ -49,7 +50,22 @@ npm run build
 DIFF_SLIDER_CODE_SERVER=http://127.0.0.1:8123 npm run test:e2e
 ```
 
-Each run creates a throwaway repository and checks: the keybinding, dragging across a rename, opening VS Code's diff editor, live updates while typing, refreshing after an outside `git commit`, restoring after a window reload, and the Timeline and Explorer context menus.
+Each run creates a throwaway repository and checks: the keybinding, dragging across a rename, saving the **Content changes only** setting, opening VS Code's diff editor, live updates while typing, refreshing after an outside `git commit`, restoring after a window reload, and the Timeline and Explorer context menus.
+
+### Recording the README animations
+
+The GIFs in `media/demo` are recordings of the real extension in code-server, made by `test/demo/demos.spec.ts` on the history of [Express](https://github.com/expressjs/express) (MIT License). Record them again when the UI changes:
+
+```sh
+# code-server as for the end-to-end tests, and ffmpeg with the palettegen filter
+# (apt install ffmpeg, brew install ffmpeg, or set FFMPEG to its path).
+CODE_SERVER=/tmp/cs/node_modules/.bin/code-server npm run demos
+
+# Just one of them (scrub-history, follow-renames, step-through-commits, live-working-copy):
+CODE_SERVER=/tmp/cs/node_modules/.bin/code-server npm run demos -- -g follow-renames
+```
+
+The first run clones Express into `.demos/express` and checks out a pinned commit, so the timelines stay the same. Each run builds the extension, starts its own code-server on a free port (a fresh profile in `.demos/vscode`, with a dark theme and this checkout as the extension), records each scene with Chromium's screencast and overwrites `media/demo/<scene>.gif`. The scenes check what they show, such as the commit counts at that commit and the rename on the commit card, so a run fails rather than recording something broken. Look at the GIFs before committing them, and keep each one to a few MB. They aren't packaged: `.vscodeignore` includes only the files directly in `media`, and `vsce` points the README's images at GitHub.
 
 ## Packaging and releases
 
@@ -59,11 +75,13 @@ npm run package      # diff-slider-<version>.vsix
 
 The **Build** workflow (`.github/workflows/build.yml`) runs the typecheck, unit tests and UI tests on every push to `main` and every pull request, then packages the extension. The `.vsix` is attached to the run as an artifact named `diff-slider-<version>-<sha>`.
 
-To publish a release, bump `version` in `package.json` (and add a `CHANGELOG.md` entry), then push a matching tag:
+To publish a release, bump the version (`npm version <x.y.z> --no-git-tag-version` updates `package.json` and `package-lock.json`), add a `CHANGELOG.md` entry, and once that is on `main`, push a matching tag:
 
 ```sh
-git tag v0.2.0
-git push origin v0.2.0
+git tag v0.2.1
+git push origin v0.2.1
 ```
+
+Give every release its own version. VS Code keeps running an installed build until the window reloads, and installing another build of the same version replaces its files in place; the panel then asks for a reload.
 
 The workflow checks that the tag matches `package.json` and creates a GitHub release with the `.vsix` attached.

@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as http from 'http';
 import type { AddressInfo } from 'net';
 import * as path from 'path';
+import type { DiffOptions } from '../../src/shared/protocol';
 import { webviewHtml } from '../../src/webviewHtml';
 import { buildFixture, type FixtureOptions } from './fixture';
 import { THEMES } from './themes';
@@ -14,6 +15,10 @@ export interface Scenario {
   /** Stop id whose content is reported as binary. */
   binary?: string;
   contentDelay?: number;
+  /** The build the host reports: by default the webview's own; null leaves it out, like hosts before 0.2.1. */
+  build?: string | null;
+  /** Options the host leaves out of init, like a host from a build that doesn't know them. */
+  unknownOptions?: (keyof DiffOptions)[];
 }
 
 const TYPES: Record<string, string> = {
@@ -34,6 +39,7 @@ function listen(server: http.Server): Promise<number> {
  */
 export async function startHarness() {
   const dist = path.resolve(__dirname, '../../dist/webview');
+  const buildId = fs.readFileSync(path.resolve(__dirname, '../../dist/build-id.txt'), 'utf8');
   const mockHost = fs.readFileSync(path.join(__dirname, 'mockHost.js'), 'utf8');
 
   const assets = http.createServer((req, res) => {
@@ -54,6 +60,9 @@ export async function startHarness() {
     const url = new URL(req.url ?? '/', 'http://x');
     const scenario: Scenario = JSON.parse(url.searchParams.get('s') ?? '{}');
     const fixture = buildFixture(scenario.fixture);
+    if (scenario.build !== null) fixture.init.build = scenario.build ?? buildId;
+    const options: Partial<DiffOptions> = fixture.init.options;
+    for (const key of scenario.unknownOptions ?? []) delete options[key];
     const theme = THEMES[scenario.theme ?? 'dark'];
     const nonce = 'harnessnonce';
     const script = `const __FIXTURE__ = ${JSON.stringify(fixture)};\nconst __SCENARIO__ = ${JSON.stringify(scenario)};\n${mockHost}`;

@@ -4,6 +4,7 @@ import { FileHistory, toContentResult } from './fileHistory';
 import { locateFile } from './git';
 import { gitPath, onRepositoryChange } from './gitExtension';
 import { revisionUri } from './revisionProvider';
+import { BUILD_ID } from './shared/build';
 import { makeNonce, webviewHtml } from './webviewHtml';
 import {
   WORKING_ID,
@@ -184,6 +185,9 @@ export class HistoryPanel {
         case 'setOption':
           await config().update(m.key, m.value, vscode.ConfigurationTarget.Global);
           break;
+        case 'reloadWindow':
+          await vscode.commands.executeCommand('workbench.action.reloadWindow');
+          break;
       }
     } catch (err) {
       void vscode.window.showErrorMessage(`Diff Slider: ${(err as Error).message}`);
@@ -210,6 +214,7 @@ export class HistoryPanel {
       hasMore: false,
       options: readDiffOptions(),
       pageSize: config().get('pageSize', 50),
+      build: BUILD_ID,
     };
     let history: FileHistory;
     try {
@@ -306,6 +311,7 @@ export class HistoryPanel {
         hasMore: this.history.hasMore,
         options: readDiffOptions(),
         pageSize: this.history.options.pageSize,
+        build: BUILD_ID,
         selection: sel,
       },
     });

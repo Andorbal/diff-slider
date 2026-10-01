@@ -1,4 +1,5 @@
 // Builds the extension host bundle, the webview bundle (with Monaco), and the Monaco worker.
+import { randomBytes } from 'crypto';
 import * as esbuild from 'esbuild';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -6,6 +7,13 @@ import * as path from 'path';
 const production = process.argv.includes('--production');
 const watch = process.argv.includes('--watch');
 const outWebview = 'dist/webview';
+
+// Stamped into both bundles so a panel can tell that it was opened by an extension
+// host from a different build (see src/shared/build.ts). Also written to
+// dist/build-id.txt for the UI tests' mock host.
+const version = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+const buildId = `${version}+${randomBytes(4).toString('hex')}`;
+const stamp = { __DIFF_SLIDER_BUILD__: JSON.stringify(buildId) };
 
 /** @type {esbuild.BuildOptions} */
 const extension = {
@@ -18,6 +26,7 @@ const extension = {
   external: ['vscode'],
   sourcemap: !production,
   minify: production,
+  define: stamp,
   logLevel: 'warning',
 };
 
@@ -34,7 +43,7 @@ const webview = {
   sourcemap: !production,
   minify: production,
   // Monaco locates its own workers through import.meta.url; we supply them via MonacoEnvironment instead.
-  define: { 'import.meta.url': '""' },
+  define: { 'import.meta.url': '""', ...stamp },
   logLevel: 'warning',
 };
 
@@ -72,6 +81,7 @@ function copyIcons() {
 async function main() {
   if (!watch) fs.rmSync('dist', { recursive: true, force: true });
   copyIcons();
+  fs.writeFileSync('dist/build-id.txt', buildId);
   if (watch) {
     const contexts = await Promise.all([extension, webview, worker].map((o) => esbuild.context(o)));
     await Promise.all(contexts.map((c) => c.watch()));

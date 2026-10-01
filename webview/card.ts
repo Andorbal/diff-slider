@@ -114,10 +114,10 @@ export class Card {
           ? `<span class="added">+${stop.added}</span> <span class="deleted">−${stop.deleted}</span>`
           : '';
     const file = [
-      stop.status === 'A' ? '<span class="status">file added</span>' : '',
-      stop.status === 'D' ? '<span class="status deleted">file deleted</span>' : '',
-      stop.oldPath ? `<span class="status">renamed from <code>${escapeHtml(stop.oldPath)}</code></span>` : '',
-      (stop.parents?.length ?? 0) > 1 ? '<span class="status">merge commit (diff vs. first parent)</span>' : '',
+      stop.status === 'A' ? '<span>file added</span>' : '',
+      stop.status === 'D' ? '<span class="deleted">file deleted</span>' : '',
+      stop.oldPath ? `<span>renamed from <code>${escapeHtml(stop.oldPath)}</code></span>` : '',
+      (stop.parents?.length ?? 0) > 1 ? '<span>merge commit (diff vs. first parent)</span>' : '',
     ]
       .filter(Boolean)
       .join(' · ');
@@ -141,7 +141,7 @@ export class Card {
         <span class="dsi dsi-clock"></span><span>${stop.authorDate ? `${relativeTime(stop.authorDate)} · ${absoluteTime(stop.authorDate)}` : ''}</span>
         ${stats ? `<span class="card-stats">${stats}</span>` : ''}
       </div>
-      ${file ? `<div class="card-meta file">${file}</div>` : ''}
+      ${file ? `<div class="card-meta card-file">${file}</div>` : ''}
       ${this.actionsHtml(stop)}`;
   }
 

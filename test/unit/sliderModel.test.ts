@@ -130,6 +130,22 @@ describe('axis labels', () => {
     }
   });
 
+  it('labels when commits landed, since author dates jump around in merged history', () => {
+    const at = (y: number, m = 0) => Date.UTC(y, m, 15);
+    const landed = (id: string, authored: number, committed: number): Stop => ({ ...commit(id, authored), commitDate: committed });
+    const stops = [
+      landed('a', at(2018), at(2021)),
+      landed('b', at(2022), at(2022)),
+      landed('c', at(2019), at(2022, 3)), // authored long before it was merged
+      landed('d', at(2020), at(2024)),
+      commit('e', at(2025)), // no commit date: the author date stands in
+      working,
+    ];
+    expect(granularityFor(stops)).toBe('year');
+    const labels = axisLabels(stops, computeLayout(stops.length, 1200, { minSpacing: 10, padLeft: 20, padRight: 40 }));
+    expect(labels.filter((l) => l.kind === 'date').map((l) => l.text)).toEqual(['2021', '2022', '2024', '2025']);
+  });
+
   it('labels the staged stop when there is room', () => {
     const t = Date.UTC(2024, 0, 1);
     const stops = [commit('a', t), staged, working];

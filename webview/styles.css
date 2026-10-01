@@ -142,6 +142,12 @@ code {
   background: var(--vscode-toolbar-hoverBackground, rgba(90, 93, 94, 0.31));
 }
 
+.toolbar button:disabled {
+  opacity: 0.4;
+  background: transparent;
+  cursor: default;
+}
+
 .toolbar button.on {
   background: var(--vscode-inputOption-activeBackground, rgba(0, 127, 212, 0.4));
   border-color: var(--vscode-inputOption-activeBorder, transparent);
@@ -192,11 +198,50 @@ code {
   outline-offset: 1px;
 }
 
+.check:has(input:disabled) {
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* Too narrow for the label: keep the box (its tooltip explains it) so the toolbar still fits. */
 @media (max-width: 540px) {
   .check-text {
     display: none;
   }
+}
+
+/* Shown when the panel and the extension host come from different builds (see App.renderNotice). */
+.notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 5px 12px;
+  border-bottom: 1px solid var(--vscode-inputValidation-warningBorder, var(--ds-border));
+  background: var(--vscode-inputValidation-warningBackground, rgba(204, 167, 0, 0.15));
+  color: var(--vscode-inputValidation-warningForeground, inherit);
+  font-size: 12px;
+}
+
+.notice .dsi-warning {
+  color: var(--vscode-editorWarning-foreground, #cca700);
+}
+
+.notice-text {
+  flex: 1 1 auto;
+}
+
+.notice button {
+  padding: 2px 10px;
+  border: none;
+  border-radius: 2px;
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  cursor: pointer;
+}
+
+.notice button:hover {
+  background: var(--vscode-button-hoverBackground);
 }
 
 button:focus-visible,
@@ -801,7 +846,8 @@ button:focus-visible,
   font-size: 13px;
 }
 
-.card-meta.file {
+/* Not "file" or "status": those classes belong to the top bar and the loading/error state. */
+.card-meta.card-file {
   margin-top: 2px;
   flex-wrap: wrap;
 }

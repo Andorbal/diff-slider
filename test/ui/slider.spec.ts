@@ -169,6 +169,41 @@ test('Older button loads a page; shift-click loads everything', async ({ page })
   await expect(page.locator('.tl-tick').nth(19)).toBeInViewport();
 });
 
+test('the card says when a commit renamed the file', async ({ page }) => {
+  const problems = await open(page);
+  await page.locator('.tl-more').click({ modifiers: ['Shift'] });
+  await expect(page.locator('.tl-tick')).toHaveCount(122);
+  const tick = page.locator('.tl-tick').nth(30); // the fixture renames src/run.ts here
+  await tick.scrollIntoViewIfNeeded();
+  const { x, y } = await tickCenter(page, 30);
+  await page.mouse.move(x, y);
+  const card = page.locator('.card');
+  await expect(card).toBeVisible();
+  // Visible, not just present: the card's labels once shared a class that hid them.
+  await expect(card.getByText('renamed from src/run.ts')).toBeVisible();
+  expect(problems).toEqual([]);
+});
+
+test('the newest end stays in view when the panel gets narrower or wider', async ({ page }) => {
+  const problems = await open(page);
+  await waitForDiff(page);
+  await expect(page.locator('.tl-tick.working')).toBeInViewport();
+  // Like opening the file beside the slider: the timeline no longer fits and scrolls.
+  await page.setViewportSize({ width: 560, height: 800 });
+  await expect.poll(() => page.locator('.tl-scroll').evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
+  await expect(page.locator('.tl-tick.working')).toBeInViewport();
+  await expect(page.locator('.tl-handle.is-old .tl-handle-knob')).toBeInViewport();
+  // Scrolled somewhere in the middle, a resize keeps that spot the same distance from the right edge.
+  await page.locator('.tl-scroll').evaluate((el) => (el.scrollLeft = el.scrollWidth - el.clientWidth - 150));
+  const gap = () => page.locator('.tl-scroll').evaluate((el) => Math.round(el.scrollWidth - el.scrollLeft - el.clientWidth));
+  await expect.poll(gap).toBe(150);
+  await page.setViewportSize({ width: 480, height: 800 });
+  await expect.poll(gap).toBe(150);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect(page.locator('.tl-tick.working')).toBeInViewport();
+  expect(problems).toEqual([]);
+});
+
 test('the Older button stays reachable when the timeline is scrolled to the newest end', async ({ page }) => {
   await open(page);
   await page.locator('.tl-more').click();
@@ -359,6 +394,8 @@ test('commits without a visible change are left off the timeline until unchecked
   await waitForDiff(page);
   const box = page.locator('input[data-option="contentChangesOnly"]');
   await expect(box).toBeChecked();
+  await expect(box).toBeEnabled();
+  await expect(page.locator('.notice')).toBeHidden();
   await expect(page.locator('.tl-tick')).toHaveCount(52 - HIDDEN.length);
   await expect(page.locator('.file-count')).toHaveText('47 commits loaded (3 hidden)');
   // The host picked the latest commit, which is hidden, so the handle sits on the
@@ -388,6 +425,59 @@ test('commits without a visible change are left off the timeline until unchecked
   await box.focus();
   await page.keyboard.press('[');
   expect(await debug(page, (d) => d.selection())).toEqual([commitAt(116).id, STAGED_ID]);
+  expect(problems).toEqual([]);
+});
+
+test('says so when there is nothing for the checkbox to hide', async ({ page }) => {
+  const problems = await open(page);
+  await waitForDiff(page);
+  await page.locator('label.check').click();
+  await expect(page.locator('input[data-option="contentChangesOnly"]')).not.toBeChecked();
+  await expect(page.locator('.toast')).toBeVisible();
+  await expect(page.locator('.toast')).toContainText('Nothing to show: every loaded commit changes what the diff shows.');
+  await expect(page.locator('.tl-tick')).toHaveCount(52);
+  // The choice is still saved.
+  expect((await sent(page)).filter((m) => m.type === 'setOption')).toEqual([
+    { type: 'setOption', key: 'contentChangesOnly', value: false },
+  ]);
+  expect(problems).toEqual([]);
+});
+
+// Reinstalling the extension over the same version while VS Code runs leaves the old
+// extension host running; panels opened afterwards load the new webview. The old host
+// has no build stamp and doesn't know (or register) the newer options.
+test('a host from an older build: the panel asks for a reload and never sends options that host cannot save', async ({ page }) => {
+  const problems = await open(page, { build: null, unknownOptions: ['contentChangesOnly'], fixture: { noVisibleChange: HIDDEN } });
+  await waitForDiff(page);
+  const notice = page.locator('.notice');
+  await expect(notice).toBeVisible();
+  await expect(notice).toContainText('Diff Slider was updated while this window was open.');
+  await expect(notice).toContainText('Run Developer: Reload Window');
+  // That host can't reload the window for us, so there is no button.
+  await expect(notice.locator('button')).toHaveCount(0);
+
+  const box = page.locator('input[data-option="contentChangesOnly"]');
+  await expect(box).toBeDisabled();
+  await expect(box).toBeChecked();
+  await page.locator('label.check').click({ force: true });
+  await expect(box).toBeChecked();
+
+  // Options the old host knows still work.
+  await page.locator('[data-toggle="wordWrap"]').click();
+  await expect(page.locator('[data-toggle="wordWrap"]')).toHaveAttribute('aria-pressed', 'true');
+  expect((await sent(page)).filter((m) => m.type === 'setOption')).toEqual([{ type: 'setOption', key: 'wordWrap', value: true }]);
+  await expect(page.locator('.toast')).toBeHidden();
+  expect(problems).toEqual([]);
+});
+
+test('a host from another build that knows how: the notice reloads the window', async ({ page }) => {
+  const problems = await open(page, { build: '0.2.0+0123abcd' });
+  await waitForDiff(page);
+  const notice = page.locator('.notice');
+  await expect(notice).toBeVisible();
+  await expect(page.locator('input[data-option="contentChangesOnly"]')).toBeEnabled();
+  await notice.getByRole('button', { name: 'Reload Window' }).click();
+  expect((await sent(page)).filter((m) => m.type === 'reloadWindow')).toEqual([{ type: 'reloadWindow' }]);
   expect(problems).toEqual([]);
 });
 

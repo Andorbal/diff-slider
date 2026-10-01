@@ -2,7 +2,9 @@
 
 Scrub through a file's git history with a slider and watch the diff update as you drag.
 
-![Diff Slider: dragging the old handle back through a file's history](media/screenshot.png)
+![Diff Slider opening on lib/response.js with Ctrl+Alt+H, then dragging the old handle back through its history while the diff updates and a commit card follows the handle; dragging past the oldest loaded commit loads 50 more](media/demo/scrub-history.gif)
+
+<sub>The recordings on this page were made in VS Code on the history of [Express](https://github.com/expressjs/express) (MIT License).</sub>
 
 Most history tools give you a list of commits. To see how a file changed, you open a commit, find the file, pick "compare with previous" or "compare with working copy", and repeat for the next commit. Diff Slider puts the file's whole history on one timeline above a diff and gives you two handles to drag.
 
@@ -22,6 +24,8 @@ Open a file and press **Ctrl+Alt+H** (**⌃⌘H** on macOS). You can also run it
 - Tags show as small tag markers. Month and year labels run along the bottom.
 - **Commits that don't change what the diff shows are left out**: ones that only rename the file, change its mode, or convert its line endings. The header says how many are hidden. Uncheck **Content changes only** in the toolbar to put them back on the timeline.
 
+![Following examples/error-pages/index.js back to 2010, when it was examples/pages/app.js: Home moves the old handle to the first commit, then unchecking Content changes only brings back the two commits that only renamed the file, whose cards say what it was renamed from](media/demo/follow-renames.gif)
+
 ### The two handles
 
 When the slider opens, one handle sits on the **latest commit** and the other on the **working copy**, so you see your uncommitted changes. From there:
@@ -33,6 +37,8 @@ When the slider opens, one handle sits on the **latest commit** and the other on
 
 ### Other things you can do
 
+![Double-clicking a commit to see just its change, then stepping both handles back one commit at a time with the bracket keys and jumping to each change with N](media/demo/step-through-commits.gif)
+
 - **Double-click a commit** (or use **Show this change** on its card) to see just the change that commit made.
 - **Walk the history one commit at a time**: `[` and `]` (or Shift+←/→) move both handles together, keeping the gap between them.
 - **Live working copy.** Edits you make to the file, saved or not, show up in the diff as you type.
@@ -42,6 +48,8 @@ When the slider opens, one handle sits on the **latest commit** and the other on
 - **Open a file at any revision** or **copy a commit SHA** from the commit card.
 - Toggle **side-by-side / inline**, **ignore whitespace**, **collapse unchanged regions**, and **word wrap** from the toolbar. Moved code blocks are detected and marked.
 - The panel survives a window reload and comes back with the same handles selected.
+
+![Typing in lib/response.js beside the slider: the new lines appear on the working copy side of the diff as they are typed](media/demo/live-working-copy.gif)
 
 ### Keyboard
 
@@ -91,12 +99,14 @@ Clicking the **OLD** or **NEW** label under the timeline focuses that handle.
 
 Download the `.vsix` from the [latest release](https://github.com/Andorbal/diff-slider/releases/latest), or from the artifacts of any [Build workflow run](https://github.com/Andorbal/diff-slider/actions/workflows/build.yml), then run `code --install-extension diff-slider-<version>.vsix`.
 
+Builds from the same release share a version number, and VS Code keeps running the old build until you reload the window. If a panel opened after installing says **Diff Slider was updated while this window was open**, reload the window.
+
 To build it yourself:
 
 ```sh
 npm install
 npm run package          # creates diff-slider-<version>.vsix
-code --install-extension diff-slider-0.2.0.vsix
+code --install-extension diff-slider-0.2.1.vsix
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development and testing.

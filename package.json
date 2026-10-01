@@ -2,7 +2,7 @@
   "name": "diff-slider",
   "displayName": "Diff Slider",
   "description": "Scrub through a file's git history with a two-handle slider and watch the diff update live.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publisher": "AndrewBenz",
   "icon": "media/icon.png",
   "license": "MIT",
@@ -160,6 +160,7 @@
     "test": "vitest run",
     "test:ui": "npm run build && playwright test -c test/ui/playwright.config.ts",
     "test:e2e": "playwright test -c test/e2e/playwright.config.ts",
+    "demos": "npm run build && playwright test -c test/demo/playwright.config.ts",
     "check": "npm run typecheck && npm test && npm run test:ui",
     "vscode:prepublish": "node esbuild.mjs --production",
     "package": "vsce package --no-dependencies"

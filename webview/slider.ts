@@ -55,6 +55,11 @@ export class Slider {
   private active: Handle = 0;
   /** Why the pending "load more" was requested; decides where to scroll once it arrives. */
   private loadSource?: 'button' | 'auto';
+  /**
+   * How far the newest end is past the right edge of the view, as of the last
+   * scroll. Resizing keeps it, so the handles stay in view when the panel narrows.
+   */
+  private beyondRight = 0;
   private barEls: (HTMLElement | undefined)[] = [];
 
   constructor(private readonly events: SliderEvents) {
@@ -96,6 +101,7 @@ export class Slider {
     this.scrollEl.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
     this.scrollEl.addEventListener('scroll', () => {
       if (!this.drag) this.setHover(-1);
+      this.rememberScroll();
     });
     this.moreEl.addEventListener('click', (e) => {
       if (this.loading || !this.hasMore) return;
@@ -136,6 +142,7 @@ export class Slider {
       }
       if (added > 0) this.loadSource = undefined;
     }
+    this.rememberScroll();
     if (this.drag) this.updateFromPointer(this.drag.clientX);
   }
 
@@ -205,9 +212,14 @@ export class Slider {
   }
 
   private relayout(): void {
-    const fromRight = this.contentEl.scrollWidth - this.scrollEl.scrollLeft;
+    // By now the view already has its new width, so measure from before the resize.
     this.renderAll();
-    this.scrollEl.scrollLeft = this.contentEl.scrollWidth - fromRight;
+    this.scrollEl.scrollLeft = this.contentEl.scrollWidth - this.scrollEl.clientWidth - this.beyondRight;
+    this.rememberScroll();
+  }
+
+  private rememberScroll(): void {
+    this.beyondRight = Math.max(0, this.contentEl.scrollWidth - this.scrollEl.scrollLeft - this.scrollEl.clientWidth);
   }
 
   private renderAll(): void {

@@ -128,8 +128,17 @@ export function barsFor(stops: readonly Stop[], maxHeight: number, minHeight = 3
 
 export type Granularity = 'day' | 'month' | 'year';
 
+/**
+ * When a commit landed on the branch, which is what the axis labels. The
+ * timeline follows git log's order, which follows commit dates; author dates
+ * jump around wherever history was merged, rebased or cherry-picked.
+ */
+function landedAt(s: Stop): number | undefined {
+  return s.kind === 'commit' ? (s.commitDate ?? s.authorDate) : undefined;
+}
+
 export function granularityFor(stops: readonly Stop[]): Granularity {
-  const dates = stops.filter((s) => s.kind === 'commit' && s.authorDate).map((s) => s.authorDate!);
+  const dates = stops.map(landedAt).filter((d): d is number => !!d);
   if (dates.length < 2) return 'day';
   const span = Math.max(...dates) - Math.min(...dates);
   const day = 86_400_000;
@@ -186,9 +195,9 @@ export function axisLabels(stops: readonly Stop[], layout: Layout): AxisLabel[] 
   let prevKey = '';
   let prevYear = -1;
   for (let i = 0; i < stops.length; i++) {
-    const s = stops[i];
-    if (s.kind !== 'commit' || !s.authorDate) continue;
-    const d = new Date(s.authorDate);
+    const date = landedAt(stops[i]);
+    if (!date) continue;
+    const d = new Date(date);
     const key = periodKey(d, g);
     if (key === prevKey) continue;
     prevKey = key;

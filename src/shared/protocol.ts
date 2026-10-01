@@ -66,8 +66,14 @@ export interface InitPayload {
   /** Oldest first, working copy last. */
   stops: Stop[];
   hasMore: boolean;
+  /**
+   * The options this host can save. A host from an older build may leave some
+   * out; the panel then disables their controls rather than sending them.
+   */
   options: DiffOptions;
   pageSize: number;
+  /** The host's `BUILD_ID`. Hosts from before 0.2.1 leave it out. */
+  build?: string;
   /** Stop ids the two handles start on. */
   selection?: [string, string];
   /** 1-based line to reveal in the new side after the first render. */
@@ -106,6 +112,7 @@ export type WebviewMessage =
   | { type: 'openRevision'; stopId: string; line?: number }
   | { type: 'copy'; text: string; label?: string }
   | { type: 'setOption'; key: keyof DiffOptions; value: boolean }
+  | { type: 'reloadWindow' }
   | { type: 'selectionChanged'; selection: [string, string] };
 
 /** What the webview persists with `setState`, used to restore panels after a reload. */
