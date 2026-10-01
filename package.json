@@ -160,6 +160,7 @@
     "test": "vitest run",
     "test:ui": "npm run build && playwright test -c test/ui/playwright.config.ts",
     "test:e2e": "playwright test -c test/e2e/playwright.config.ts",
+    "demos": "npm run build && playwright test -c test/demo/playwright.config.ts",
     "check": "npm run typecheck && npm test && npm run test:ui",
     "vscode:prepublish": "node esbuild.mjs --production",
     "package": "vsce package --no-dependencies"

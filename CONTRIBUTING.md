@@ -9,6 +9,7 @@
 | `src/fileHistory.ts`, `src/git.ts` | Git access (`git log --follow`, a long-lived `git cat-file --batch`). No `vscode` imports, so they are tested against real repositories |
 | `src/shared/protocol.ts` | Messages between the extension and the webview |
 | `webview/` | The panel UI: `slider.ts` (timeline and handles), `sliderModel.ts` (pure layout/selection logic), `diffView.ts` (Monaco diff editor), `card.ts` (commit popup), `app.ts` (wiring) |
+| `test/demo/` | Records the animations in the README (`npm run demos`) |
 | `esbuild.mjs` | Bundles the extension, the webview (with Monaco) and Monaco's diff worker into `dist/`, stamping the extension and webview with the same build id (`src/shared/build.ts`) so a panel notices when VS Code is still running another build |
 
 ## Build and run
@@ -50,6 +51,21 @@ DIFF_SLIDER_CODE_SERVER=http://127.0.0.1:8123 npm run test:e2e
 ```
 
 Each run creates a throwaway repository and checks: the keybinding, dragging across a rename, saving the **Content changes only** setting, opening VS Code's diff editor, live updates while typing, refreshing after an outside `git commit`, restoring after a window reload, and the Timeline and Explorer context menus.
+
+### Recording the README animations
+
+The GIFs in `media/demo` are recordings of the real extension in code-server, made by `test/demo/demos.spec.ts` on the history of [Express](https://github.com/expressjs/express) (MIT License). Record them again when the UI changes:
+
+```sh
+# code-server as for the end-to-end tests, and ffmpeg with the palettegen filter
+# (apt install ffmpeg, brew install ffmpeg, or set FFMPEG to its path).
+CODE_SERVER=/tmp/cs/node_modules/.bin/code-server npm run demos
+
+# Just one of them (scrub-history, follow-renames, step-through-commits, live-working-copy):
+CODE_SERVER=/tmp/cs/node_modules/.bin/code-server npm run demos -- -g follow-renames
+```
+
+The first run clones Express into `.demos/express` and checks out a pinned commit, so the timelines stay the same. Each run builds the extension, starts its own code-server on a free port (a fresh profile in `.demos/vscode`, with a dark theme and this checkout as the extension), records each scene with Chromium's screencast and overwrites `media/demo/<scene>.gif`. The scenes check what they show, such as the commit counts at that commit and the rename on the commit card, so a run fails rather than recording something broken. Look at the GIFs before committing them, and keep each one to a few MB. They aren't packaged: `.vscodeignore` includes only the files directly in `media`, and `vsce` points the README's images at GitHub.
 
 ## Packaging and releases
 
