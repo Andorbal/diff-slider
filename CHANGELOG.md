@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Renamed from Diff Slider to **History Slider**, since it shows a file's history rather than a single diff. The extension ID is now `AndrewBenz.history-slider`, so VS Code treats it as a new extension: uninstall Diff Slider after installing it. Settings moved from `diffSlider.*` to `historySlider.*` and the command from `diffSlider.showHistory` to `historySlider.showHistory`. Copy over any settings or keybindings you changed.
+
 ## 0.2.1
 
 - Fixed the **Content changes only** checkbox doing nothing, and clicking it failing with "diffSlider.contentChangesOnly is not a registered configuration", after the extension was reinstalled over the same version while VS Code was open. VS Code keeps running the previous build until the window is reloaded, but a panel opened in the meantime loads the new one. The panel now notices this and asks you to reload the window, and it disables any control the running build can't save instead of failing.

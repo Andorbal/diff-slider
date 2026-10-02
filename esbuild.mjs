@@ -13,7 +13,7 @@ const outWebview = 'dist/webview';
 // dist/build-id.txt for the UI tests' mock host.
 const version = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
 const buildId = `${version}+${randomBytes(4).toString('hex')}`;
-const stamp = { __DIFF_SLIDER_BUILD__: JSON.stringify(buildId) };
+const stamp = { __HISTORY_SLIDER_BUILD__: JSON.stringify(buildId) };
 
 /** @type {esbuild.BuildOptions} */
 const extension = {
@@ -62,20 +62,20 @@ const worker = {
 
 /**
  * Monaco ships its own "codicon" font. To avoid clashing with it, the icon font
- * used by our UI is renamed: `.codicon-foo` becomes `.dsi-foo`.
+ * used by our UI is renamed: `.codicon-foo` becomes `.hsi-foo`.
  */
 function copyIcons() {
   fs.mkdirSync(outWebview, { recursive: true });
   const dir = 'node_modules/@vscode/codicons/dist';
   const css = fs
     .readFileSync(path.join(dir, 'codicon.css'), 'utf8')
-    .replace(/font-family:\s*"codicon"/g, 'font-family: "ds-codicon"')
-    .replace(/(\d+px\/1) codicon;/g, '$1 "ds-codicon";')
-    .replace(/url\("\.\/codicon\.ttf[^"]*"\)/g, 'url("./ds-codicon.ttf")')
-    .replace(/\.codicon/g, '.dsi')
-    .replace(/codicon-/g, 'dsi-');
+    .replace(/font-family:\s*"codicon"/g, 'font-family: "hs-codicon"')
+    .replace(/(\d+px\/1) codicon;/g, '$1 "hs-codicon";')
+    .replace(/url\("\.\/codicon\.ttf[^"]*"\)/g, 'url("./hs-codicon.ttf")')
+    .replace(/\.codicon/g, '.hsi')
+    .replace(/codicon-/g, 'hsi-');
   fs.writeFileSync(path.join(outWebview, 'icons.css'), css);
-  fs.copyFileSync(path.join(dir, 'codicon.ttf'), path.join(outWebview, 'ds-codicon.ttf'));
+  fs.copyFileSync(path.join(dir, 'codicon.ttf'), path.join(outWebview, 'hs-codicon.ttf'));
 }
 
 async function main() {

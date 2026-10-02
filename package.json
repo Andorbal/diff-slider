@@ -1,6 +1,6 @@
 {
-  "name": "diff-slider",
-  "displayName": "Diff Slider",
+  "name": "history-slider",
+  "displayName": "History Slider",
   "description": "Scrub through a file's git history with a two-handle slider and watch the diff update live.",
   "version": "0.2.1",
   "publisher": "AndrewBenz",
@@ -8,7 +8,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/andorbal/diff-slider"
+    "url": "https://github.com/andorbal/history-slider"
   },
   "engines": {
     "vscode": "^1.90.0"
@@ -27,55 +27,55 @@
   ],
   "main": "./dist/extension.js",
   "activationEvents": [
-    "onWebviewPanel:diffSlider.history"
+    "onWebviewPanel:historySlider.history"
   ],
   "contributes": {
     "commands": [
       {
-        "command": "diffSlider.showHistory",
+        "command": "historySlider.showHistory",
         "title": "Show File History Slider",
-        "category": "Diff Slider",
+        "category": "History Slider",
         "icon": "$(git-compare)"
       }
     ],
     "menus": {
       "commandPalette": [
         {
-          "command": "diffSlider.showHistory",
+          "command": "historySlider.showHistory",
           "when": "resourceScheme == file || activeEditor"
         }
       ],
       "editor/title": [
         {
-          "command": "diffSlider.showHistory",
-          "when": "resourceScheme == file && config.diffSlider.showEditorTitleButton",
+          "command": "historySlider.showHistory",
+          "when": "resourceScheme == file && config.historySlider.showEditorTitleButton",
           "group": "navigation@90"
         }
       ],
       "editor/title/context": [
         {
-          "command": "diffSlider.showHistory",
+          "command": "historySlider.showHistory",
           "when": "resourceScheme == file",
-          "group": "3_diffSlider"
+          "group": "3_historySlider"
         }
       ],
       "explorer/context": [
         {
-          "command": "diffSlider.showHistory",
+          "command": "historySlider.showHistory",
           "when": "resourceScheme == file && !explorerResourceIsFolder",
           "group": "3_compare@90"
         }
       ],
       "scm/resourceState/context": [
         {
-          "command": "diffSlider.showHistory",
+          "command": "historySlider.showHistory",
           "when": "scmProvider == git",
           "group": "navigation@90"
         }
       ],
       "timeline/item/context": [
         {
-          "command": "diffSlider.showHistory",
+          "command": "historySlider.showHistory",
           "when": "timelineItem =~ /git:file:commit\\b/",
           "group": "1_actions@90"
         }
@@ -83,72 +83,72 @@
     },
     "keybindings": [
       {
-        "command": "diffSlider.showHistory",
+        "command": "historySlider.showHistory",
         "key": "ctrl+alt+h",
         "mac": "ctrl+cmd+h",
         "when": "editorTextFocus || activeEditor"
       }
     ],
     "configuration": {
-      "title": "Diff Slider",
+      "title": "History Slider",
       "properties": {
-        "diffSlider.pageSize": {
+        "historySlider.pageSize": {
           "type": "number",
           "default": 50,
           "minimum": 5,
           "maximum": 1000,
           "markdownDescription": "How many commits to load at a time. More can always be loaded from the left end of the slider."
         },
-        "diffSlider.followRenames": {
+        "historySlider.followRenames": {
           "type": "boolean",
           "default": true,
           "markdownDescription": "Keep following the file's history across renames (`git log --follow`)."
         },
-        "diffSlider.firstParentOnly": {
+        "historySlider.firstParentOnly": {
           "type": "boolean",
           "default": false,
           "markdownDescription": "Only show commits on the first-parent chain (`git log --first-parent`). Handy for repos that merge feature branches: each merge becomes a single step."
         },
-        "diffSlider.showStaged": {
+        "historySlider.showStaged": {
           "type": "boolean",
           "default": true,
           "markdownDescription": "Add a **Staged** stop between the latest commit and the working copy when the file has staged changes."
         },
-        "diffSlider.maxFileSizeMB": {
+        "historySlider.maxFileSizeMB": {
           "type": "number",
           "default": 5,
           "minimum": 0.1,
           "markdownDescription": "Revisions larger than this (in MB) are not loaded into the diff."
         },
-        "diffSlider.renderSideBySide": {
+        "historySlider.renderSideBySide": {
           "type": "boolean",
           "default": true,
           "markdownDescription": "Show the diff side by side (`true`) or inline (`false`). Also toggled from the panel toolbar."
         },
-        "diffSlider.ignoreTrimWhitespace": {
+        "historySlider.ignoreTrimWhitespace": {
           "type": "boolean",
           "default": false,
           "markdownDescription": "Ignore leading and trailing whitespace changes. Also toggled from the panel toolbar."
         },
-        "diffSlider.hideUnchangedRegions": {
+        "historySlider.hideUnchangedRegions": {
           "type": "boolean",
           "default": false,
           "markdownDescription": "Collapse long runs of unchanged lines. Also toggled from the panel toolbar."
         },
-        "diffSlider.wordWrap": {
+        "historySlider.wordWrap": {
           "type": "boolean",
           "default": false,
           "markdownDescription": "Wrap long lines in the diff. Also toggled from the panel toolbar."
         },
-        "diffSlider.contentChangesOnly": {
+        "historySlider.contentChangesOnly": {
           "type": "boolean",
           "default": true,
           "markdownDescription": "Only show commits that change what the diff shows. Commits that just rename the file, change its mode or convert its line endings are left off the timeline. Also toggled from the panel toolbar."
         },
-        "diffSlider.showEditorTitleButton": {
+        "historySlider.showEditorTitleButton": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Show the Diff Slider button in the editor title bar."
+          "markdownDescription": "Show the History Slider button in the editor title bar."
         }
       }
     }

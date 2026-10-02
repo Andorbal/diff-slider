@@ -186,7 +186,7 @@ test('step-through-commits', async ({ browser }) => {
 
 test('live-working-copy', async ({ browser }) => {
   // Typing in the file beside the slider; inline, since the panel is half as wide.
-  const page = await prepare(browser, 'lib/response.js', 127, { 'diffSlider.renderSideBySide': false });
+  const page = await prepare(browser, 'lib/response.js', 127, { 'historySlider.renderSideBySide': false });
   const f = await slider(page);
   await quickOpen(page, 'lib/response.js', 'Control+Enter');
   await expect(page.locator('.editor-group-container')).toHaveCount(2);
