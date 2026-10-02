@@ -97,16 +97,16 @@ Clicking the **OLD** or **NEW** label under the timeline focuses that handle.
 
 ## Installing
 
-Download the `.vsix` from the [latest release](https://github.com/Andorbal/history-slider/releases/latest), or from the artifacts of any [Build workflow run](https://github.com/Andorbal/history-slider/actions/workflows/build.yml), then run `code --install-extension history-slider-<version>.vsix`.
+Install **History Slider** from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=AndrewBenz.history-slider): search for it in the Extensions view, or run `code --install-extension AndrewBenz.history-slider`.
 
-Builds from the same release share a version number, and VS Code keeps running the old build until you reload the window. If a panel opened after installing says **History Slider was updated while this window was open**, reload the window.
+To try a build that isn't released yet, download the `.vsix` from the artifacts of a [Build workflow run](https://github.com/Andorbal/history-slider/actions/workflows/build.yml), then run `code --install-extension history-slider-<version>.vsix`. Builds between releases share a version number, and VS Code keeps running the old build until you reload the window. If a panel opened after installing says **History Slider was updated while this window was open**, reload the window.
 
 To build it yourself:
 
 ```sh
 npm install
 npm run package          # creates history-slider-<version>.vsix
-code --install-extension history-slider-0.2.1.vsix
+code --install-extension history-slider-<version>.vsix
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development and testing.

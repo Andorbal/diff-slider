@@ -1,7 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
 
+- Published on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=AndrewBenz.history-slider), so VS Code installs and updates it for you.
 - Renamed from Diff Slider to **History Slider**, since it shows a file's history rather than a single diff. The extension ID is now `AndrewBenz.history-slider`, so VS Code treats it as a new extension: uninstall Diff Slider after installing it. Settings moved from `diffSlider.*` to `historySlider.*` and the command from `diffSlider.showHistory` to `historySlider.showHistory`. Copy over any settings or keybindings you changed.
 
 ## 0.2.1
