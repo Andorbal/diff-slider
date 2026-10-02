@@ -93,7 +93,7 @@ Follow [Semantic Versioning](https://semver.org/). Command IDs and setting names
 The publish job signs in with Microsoft Entra ID; there is no personal access token. It needs:
 
 - A GitHub environment named `vscode-marketplace` whose deployment policy allows `main` and `v*` tags, with the **variables** (not secrets) `AZURE_CLIENT_ID` and `AZURE_TENANT_ID`.
-- An Entra app registration (that client ID) with a federated credential for GitHub Actions: organization `Andorbal`, repository `history-slider`, entity type *Environment*, environment `vscode-marketplace`. It's the same app What the Test publishes with, so the credential's subject is the only thing specific to this repo. Renaming the repo breaks it.
+- The user-assigned managed identity `andrewbenz-marketplace` (that client ID) with a federated credential for GitHub Actions: organization `Andorbal`, repository `history-slider`, entity type *Environment*, environment `vscode-marketplace`. In the Azure portal it's under **Managed Identities** → `andrewbenz-marketplace` → **Settings** → **Federated credentials**, not App registrations. What the Test publishes with the same identity, so the credential's subject is the only thing specific to this repo. Renaming the repo breaks it.
 - That identity added as a member (role Contributor or higher) of the `AndrewBenz` publisher at <https://marketplace.visualstudio.com/manage/publishers/AndrewBenz>.
 
 To check all three without publishing anything, run the **Marketplace check** workflow (`.github/workflows/marketplace-check.yml`) from the Actions tab.
