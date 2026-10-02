@@ -1,0 +1,46 @@
+name: Marketplace check
+
+# Run by hand to check Marketplace publishing before tagging a release (CONTRIBUTING.md).
+# It signs in exactly as build.yml's publish-vscode job does and checks that the
+# identity can publish as AndrewBenz. It publishes nothing.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check publish rights
+    runs-on: ubuntu-latest
+    environment: vscode-marketplace
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install the pinned vsce
+        run: npm ci
+
+      - name: Sign in to Microsoft Entra ID
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+
+      - name: Check publish rights for AndrewBenz
+        run: |
+          if npx vsce verify-pat --azure-credential AndrewBenz; then
+            echo "### The identity can publish as AndrewBenz" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### The identity can't publish as AndrewBenz: is it a member of the publisher?" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
