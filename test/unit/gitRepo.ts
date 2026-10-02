@@ -9,7 +9,7 @@ export class TestRepo {
   private tick = 0;
 
   constructor() {
-    this.root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'diff-slider-test-')));
+    this.root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'history-slider-test-')));
     this.git('init', '-q', '-b', 'main');
     this.git('config', 'user.name', 'Ada Lovelace');
     this.git('config', 'user.email', 'ada@example.com');

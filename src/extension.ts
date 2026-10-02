@@ -5,7 +5,7 @@ import type { PanelState } from './shared/protocol';
 
 export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
-    vscode.commands.registerCommand('diffSlider.showHistory', (...args: unknown[]) => showHistory(context, args)),
+    vscode.commands.registerCommand('historySlider.showHistory', (...args: unknown[]) => showHistory(context, args)),
     vscode.workspace.registerTextDocumentContentProvider(REVISION_SCHEME, new RevisionContentProvider()),
     vscode.window.registerWebviewPanelSerializer(VIEW_TYPE, {
       async deserializeWebviewPanel(panel: vscode.WebviewPanel, state: PanelState | undefined) {
@@ -13,9 +13,9 @@ export function activate(context: vscode.ExtensionContext): void {
       },
     }),
     vscode.workspace.onDidChangeConfiguration((e) => {
-      if (!e.affectsConfiguration('diffSlider')) return;
+      if (!e.affectsConfiguration('historySlider')) return;
       const historyKeys = ['pageSize', 'followRenames', 'firstParentOnly', 'showStaged', 'maxFileSizeMB'];
-      if (historyKeys.some((k) => e.affectsConfiguration(`diffSlider.${k}`))) HistoryPanel.reloadAll();
+      if (historyKeys.some((k) => e.affectsConfiguration(`historySlider.${k}`))) HistoryPanel.reloadAll();
       else HistoryPanel.broadcastOptions();
     }),
   );
@@ -61,11 +61,11 @@ function resolveTarget(args: unknown[]): { uri?: vscode.Uri; options: OpenOption
 function showHistory(context: vscode.ExtensionContext, args: unknown[]): void {
   const { uri, options } = resolveTarget(args);
   if (!uri) {
-    void vscode.window.showInformationMessage('Diff Slider: open a file first, then run this command.');
+    void vscode.window.showInformationMessage('History Slider: open a file first, then run this command.');
     return;
   }
   if (uri.scheme !== 'file') {
-    void vscode.window.showInformationMessage('Diff Slider only works with files on disk.');
+    void vscode.window.showInformationMessage('History Slider only works with files on disk.');
     return;
   }
   const editor = vscode.window.activeTextEditor;

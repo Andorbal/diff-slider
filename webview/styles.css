@@ -1,12 +1,12 @@
 :root {
-  --ds-old: var(--vscode-charts-red, #f14c4c);
-  --ds-new: var(--vscode-charts-green, #89d185);
-  --ds-added: var(--vscode-charts-green, #89d185);
-  --ds-deleted: var(--vscode-charts-red, #f14c4c);
-  --ds-muted: var(--vscode-descriptionForeground, #999);
-  --ds-border: var(--vscode-panel-border, var(--vscode-widget-border, rgba(128, 128, 128, 0.35)));
-  --ds-accent: var(--vscode-focusBorder, #007fd4);
-  --ds-tl-height: 94px;
+  --hs-old: var(--vscode-charts-red, #f14c4c);
+  --hs-new: var(--vscode-charts-green, #89d185);
+  --hs-added: var(--vscode-charts-green, #89d185);
+  --hs-deleted: var(--vscode-charts-red, #f14c4c);
+  --hs-muted: var(--vscode-descriptionForeground, #999);
+  --hs-border: var(--vscode-panel-border, var(--vscode-widget-border, rgba(128, 128, 128, 0.35)));
+  --hs-accent: var(--vscode-focusBorder, #007fd4);
+  --hs-tl-height: 94px;
 }
 
 [hidden] {
@@ -38,15 +38,15 @@ code {
 }
 
 .muted {
-  color: var(--ds-muted);
+  color: var(--hs-muted);
 }
 
 .added {
-  color: var(--ds-added);
+  color: var(--hs-added);
 }
 
 .deleted {
-  color: var(--ds-deleted);
+  color: var(--hs-deleted);
 }
 
 .app {
@@ -72,7 +72,7 @@ code {
   gap: 2px 12px;
   padding: 4px 8px 4px 12px;
   min-height: 30px;
-  border-bottom: 1px solid var(--ds-border);
+  border-bottom: 1px solid var(--hs-border);
 }
 
 .file {
@@ -91,7 +91,7 @@ code {
 
 .file-dir,
 .file-count {
-  color: var(--ds-muted);
+  color: var(--hs-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 12px;
@@ -117,7 +117,7 @@ code {
   width: 1px;
   height: 16px;
   margin: 0 4px;
-  background: var(--ds-border);
+  background: var(--hs-border);
 }
 
 .toolbar button,
@@ -182,7 +182,7 @@ code {
   width: 16px;
   height: 16px;
   box-sizing: border-box;
-  border: 1px solid var(--vscode-checkbox-border, var(--ds-border));
+  border: 1px solid var(--vscode-checkbox-border, var(--hs-border));
   border-radius: 3px;
   background: var(--vscode-checkbox-background, transparent);
   color: var(--vscode-checkbox-foreground, var(--vscode-foreground));
@@ -194,7 +194,7 @@ code {
 }
 
 .check input:focus-visible + .check-box {
-  outline: 1px solid var(--ds-accent);
+  outline: 1px solid var(--hs-accent);
   outline-offset: 1px;
 }
 
@@ -217,13 +217,13 @@ code {
   align-items: center;
   gap: 4px 8px;
   padding: 5px 12px;
-  border-bottom: 1px solid var(--vscode-inputValidation-warningBorder, var(--ds-border));
+  border-bottom: 1px solid var(--vscode-inputValidation-warningBorder, var(--hs-border));
   background: var(--vscode-inputValidation-warningBackground, rgba(204, 167, 0, 0.15));
   color: var(--vscode-inputValidation-warningForeground, inherit);
   font-size: 12px;
 }
 
-.notice .dsi-warning {
+.notice .hsi-warning {
   color: var(--vscode-editorWarning-foreground, #cca700);
 }
 
@@ -246,7 +246,7 @@ code {
 
 button:focus-visible,
 .side:focus-visible {
-  outline: 1px solid var(--ds-accent);
+  outline: 1px solid var(--hs-accent);
   outline-offset: -1px;
 }
 
@@ -255,8 +255,8 @@ button:focus-visible,
 .timeline {
   position: relative;
   flex: none;
-  height: var(--ds-tl-height);
-  border-bottom: 1px solid var(--ds-border);
+  height: var(--hs-tl-height);
+  border-bottom: 1px solid var(--hs-border);
   background: var(--vscode-sideBar-background, var(--vscode-editor-background));
 }
 
@@ -281,7 +281,7 @@ button:focus-visible,
 
 .tl-content {
   position: relative;
-  height: calc(var(--ds-tl-height) - 6px);
+  height: calc(var(--hs-tl-height) - 6px);
   min-width: 100%;
   touch-action: none;
   cursor: pointer;
@@ -291,8 +291,8 @@ button:focus-visible,
   position: absolute;
   top: 8px;
   height: 52px;
-  background: color-mix(in srgb, var(--ds-accent) 14%, transparent);
-  border-top: 1px solid color-mix(in srgb, var(--ds-accent) 35%, transparent);
+  background: color-mix(in srgb, var(--hs-accent) 14%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--hs-accent) 35%, transparent);
   pointer-events: none;
 }
 
@@ -316,7 +316,7 @@ button:focus-visible,
 }
 
 .tl-bar.unknown {
-  background: var(--ds-muted);
+  background: var(--hs-muted);
 }
 
 .tl-tag {
@@ -350,12 +350,12 @@ button:focus-visible,
   height: 5px;
   margin: -2.5px 0 0 -2.5px;
   border-radius: 50%;
-  background: var(--ds-muted);
+  background: var(--hs-muted);
 }
 
 .tl-tick.deleted {
   background: transparent;
-  box-shadow: inset 0 0 0 1px var(--ds-muted);
+  box-shadow: inset 0 0 0 1px var(--hs-muted);
 }
 
 .tl-tick.staged {
@@ -390,13 +390,13 @@ button:focus-visible,
   top: 72px;
   font-size: 11px;
   line-height: 14px;
-  color: var(--ds-muted);
+  color: var(--hs-muted);
   white-space: nowrap;
 }
 
 .tl-label.date {
   padding-left: 5px;
-  border-left: 1px solid color-mix(in srgb, var(--ds-muted) 50%, transparent);
+  border-left: 1px solid color-mix(in srgb, var(--hs-muted) 50%, transparent);
   transform: translateX(-0.5px);
 }
 
@@ -463,7 +463,7 @@ button:focus-visible,
   opacity: 0.8;
 }
 
-.tl-more .dsi {
+.tl-more .hsi {
   font-size: 14px;
 }
 
@@ -476,11 +476,11 @@ button:focus-visible,
   outline: none;
   cursor: grab;
   z-index: 2;
-  --c: var(--ds-new);
+  --c: var(--hs-new);
 }
 
 .tl-handle.is-old {
-  --c: var(--ds-old);
+  --c: var(--hs-old);
 }
 
 .tl-handle.is-active {
@@ -538,8 +538,8 @@ button:focus-visible,
 
 /* Both handles on the same revision: show both colours so neither seems lost. */
 .tl-handle.is-same .tl-handle-knob {
-  background: linear-gradient(90deg, var(--ds-old) 50%, var(--ds-new) 50%);
-  box-shadow: 0 0 0 1px var(--ds-muted), 0 1px 3px rgba(0, 0, 0, 0.35);
+  background: linear-gradient(90deg, var(--hs-old) 50%, var(--hs-new) 50%);
+  box-shadow: 0 0 0 1px var(--hs-muted), 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
 .tl-handle:hover .tl-handle-knob,
@@ -548,7 +548,7 @@ button:focus-visible,
 }
 
 .tl-handle:focus-visible .tl-handle-knob {
-  box-shadow: 0 0 0 1px var(--c), 0 0 0 3px var(--ds-accent);
+  box-shadow: 0 0 0 1px var(--c), 0 0 0 3px var(--hs-accent);
 }
 
 .timeline.dragging .tl-handle {
@@ -564,7 +564,7 @@ button:focus-visible,
   flex: none;
   min-height: 28px;
   padding: 2px 8px;
-  border-bottom: 1px solid var(--ds-border);
+  border-bottom: 1px solid var(--hs-border);
   font-size: 12px;
 }
 
@@ -619,16 +619,16 @@ button:focus-visible,
 }
 
 .pill.old {
-  background: var(--ds-old);
+  background: var(--hs-old);
 }
 
 .pill.new {
-  background: var(--ds-new);
+  background: var(--hs-new);
 }
 
 .compare-arrow {
   flex: none;
-  color: var(--ds-muted);
+  color: var(--hs-muted);
 }
 
 .stats {
@@ -669,7 +669,7 @@ button:focus-visible,
   justify-content: center;
   padding: 24px;
   text-align: center;
-  color: var(--ds-muted);
+  color: var(--hs-muted);
   background: var(--vscode-editor-background);
 }
 
@@ -688,10 +688,10 @@ button:focus-visible,
   justify-content: center;
   gap: 10px;
   padding: 24px;
-  color: var(--ds-muted);
+  color: var(--hs-muted);
 }
 
-.state-error .status .dsi {
+.state-error .status .hsi {
   color: var(--vscode-errorForeground, #f48771);
   font-size: 20px;
 }
@@ -739,7 +739,7 @@ button:focus-visible,
   box-sizing: border-box;
   width: min(440px, calc(100vw - 16px));
   padding: 8px 10px;
-  border: 1px solid var(--vscode-editorHoverWidget-border, var(--ds-border));
+  border: 1px solid var(--vscode-editorHoverWidget-border, var(--hs-border));
   border-radius: 4px;
   background: var(--vscode-editorHoverWidget-background, var(--vscode-editorWidget-background));
   color: var(--vscode-editorHoverWidget-foreground, var(--vscode-foreground));
@@ -762,8 +762,8 @@ button:focus-visible,
   height: 8px;
   margin-left: -4px;
   background: inherit;
-  border-left: 1px solid var(--vscode-editorHoverWidget-border, var(--ds-border));
-  border-top: 1px solid var(--vscode-editorHoverWidget-border, var(--ds-border));
+  border-left: 1px solid var(--vscode-editorHoverWidget-border, var(--hs-border));
+  border-top: 1px solid var(--vscode-editorHoverWidget-border, var(--hs-border));
   transform: rotate(45deg);
 }
 
@@ -787,15 +787,15 @@ button:focus-visible,
   font-weight: 700;
   line-height: 16px;
   color: var(--vscode-editor-background);
-  background: var(--ds-muted);
+  background: var(--hs-muted);
 }
 
 .card-role.old {
-  background: var(--ds-old);
+  background: var(--hs-old);
 }
 
 .card-role.new {
-  background: var(--ds-new);
+  background: var(--hs-new);
 }
 
 .ref {
@@ -815,7 +815,7 @@ button:focus-visible,
   color: inherit;
 }
 
-.ref .dsi {
+.ref .hsi {
   font-size: 11px;
 }
 
@@ -830,7 +830,7 @@ button:focus-visible,
   margin-bottom: 6px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  color: var(--ds-muted);
+  color: var(--hs-muted);
   max-height: 9.5em;
   overflow: hidden;
 }
@@ -839,10 +839,10 @@ button:focus-visible,
   display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--ds-muted);
+  color: var(--hs-muted);
 }
 
-.card-meta .dsi {
+.card-meta .hsi {
   font-size: 13px;
 }
 
@@ -893,7 +893,7 @@ button:focus-visible,
   width: 380px;
   max-width: calc(100vw - 16px);
   padding: 8px 12px 10px;
-  border: 1px solid var(--vscode-editorWidget-border, var(--ds-border));
+  border: 1px solid var(--vscode-editorWidget-border, var(--hs-border));
   border-radius: 4px;
   background: var(--vscode-editorWidget-background);
   color: var(--vscode-editorWidget-foreground, var(--vscode-foreground));
@@ -926,15 +926,15 @@ button:focus-visible,
 
 .help p {
   margin: 8px 0 0;
-  color: var(--ds-muted);
+  color: var(--hs-muted);
 }
 
 kbd {
   font-family: var(--vscode-editor-font-family, monospace);
   font-size: 11px;
   padding: 0 4px;
-  border: 1px solid var(--vscode-keybindingLabel-border, var(--ds-border));
-  border-bottom-color: var(--vscode-keybindingLabel-bottomBorder, var(--ds-border));
+  border: 1px solid var(--vscode-keybindingLabel-border, var(--hs-border));
+  border-bottom-color: var(--vscode-keybindingLabel-bottomBorder, var(--hs-border));
   border-radius: 3px;
   background: var(--vscode-keybindingLabel-background, transparent);
   color: var(--vscode-keybindingLabel-foreground, inherit);
@@ -947,7 +947,7 @@ kbd {
   z-index: 60;
   max-width: 420px;
   padding: 8px 12px;
-  border: 1px solid var(--vscode-notifications-border, var(--ds-border));
+  border: 1px solid var(--vscode-notifications-border, var(--hs-border));
   border-radius: 4px;
   background: var(--vscode-notifications-background, var(--vscode-editorWidget-background));
   color: var(--vscode-notifications-foreground, inherit);

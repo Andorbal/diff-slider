@@ -57,7 +57,7 @@ async function waitForDiff(page: Page) {
 
 const debug = <T,>(page: Page, fn: (d: Debug) => T) =>
   page.evaluate((src) => {
-    const d = (window as unknown as { __diffSlider: Debug }).__diffSlider;
+    const d = (window as unknown as { __historySlider: Debug }).__historySlider;
     return new Function('d', `return (${src})(d)`)(d);
   }, fn.toString()) as Promise<T>;
 
@@ -451,7 +451,7 @@ test('a host from an older build: the panel asks for a reload and never sends op
   await waitForDiff(page);
   const notice = page.locator('.notice');
   await expect(notice).toBeVisible();
-  await expect(notice).toContainText('Diff Slider was updated while this window was open.');
+  await expect(notice).toContainText('History Slider was updated while this window was open.');
   await expect(notice).toContainText('Run Developer: Reload Window');
   // That host can't reload the window for us, so there is no button.
   await expect(notice.locator('button')).toHaveCount(0);

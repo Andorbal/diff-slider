@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { decodeText, runGit } from './git';
 import { gitPath } from './gitExtension';
 
-export const REVISION_SCHEME = 'diff-slider';
+export const REVISION_SCHEME = 'history-slider';
 
 interface RevisionQuery {
   root: string;

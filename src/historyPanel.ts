@@ -17,7 +17,7 @@ import {
   type WebviewMessage,
 } from './shared/protocol';
 
-export const VIEW_TYPE = 'diffSlider.history';
+export const VIEW_TYPE = 'historySlider.history';
 
 export interface OpenOptions {
   /** Commit to focus on: the handles select that commit's own change. */
@@ -28,7 +28,7 @@ export interface OpenOptions {
 }
 
 function config() {
-  return vscode.workspace.getConfiguration('diffSlider');
+  return vscode.workspace.getConfiguration('historySlider');
 }
 
 export function readDiffOptions(): DiffOptions {
@@ -190,7 +190,7 @@ export class HistoryPanel {
           break;
       }
     } catch (err) {
-      void vscode.window.showErrorMessage(`Diff Slider: ${(err as Error).message}`);
+      void vscode.window.showErrorMessage(`History Slider: ${(err as Error).message}`);
     }
   }
 

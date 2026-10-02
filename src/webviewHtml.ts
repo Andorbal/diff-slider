@@ -27,7 +27,7 @@ export function webviewHtml(o: WebviewHtmlOptions): string {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="${o.asset('icons.css')}">
 <link rel="stylesheet" href="${o.asset('main.css')}">
-<title>Diff Slider</title>
+<title>History Slider</title>
 </head>
 <body>
 <div id="app" data-worker="${o.asset('editor.worker.js')}"></div>

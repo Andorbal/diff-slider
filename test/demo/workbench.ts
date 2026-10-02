@@ -50,7 +50,7 @@ const SETTINGS: Record<string, unknown> = {
 
 const userData = path.join(WORK, 'vscode', 'user-data');
 
-/** Replaces the user settings: the defaults above plus `extra` (Diff Slider settings for a scene). */
+/** Replaces the user settings: the defaults above plus `extra` (History Slider settings for a scene). */
 export function writeSettings(extra: Record<string, unknown> = {}): void {
   const dir = path.join(userData, 'User');
   fs.mkdirSync(dir, { recursive: true });
@@ -208,7 +208,7 @@ export async function hideSideBar(page: Page): Promise<void> {
   if (await page.locator('.part.sidebar').isVisible()) await command(page, 'View: Toggle Primary Side Bar Visibility');
 }
 
-/** The visible Diff Slider panel, once it has loaded and compared. */
+/** The visible History Slider panel, once it has loaded and compared. */
 export async function slider(page: Page): Promise<FrameLocator> {
   const outer = page.locator('iframe.webview.ready').filter({ visible: true });
   await expect(outer).toHaveCount(1, { timeout: 30_000 });

@@ -242,10 +242,10 @@ export class Slider {
         const pct = Math.round(b.addedFraction * 100);
         const style = b.unknown
           ? ''
-          : `background:linear-gradient(to top,var(--ds-added) 0 ${pct}%,var(--ds-deleted) ${pct}% 100%);`;
+          : `background:linear-gradient(to top,var(--hs-added) 0 ${pct}%,var(--hs-deleted) ${pct}% 100%);`;
         barsHtml += `<div class="tl-bar${b.unknown ? ' unknown' : ''}" data-i="${i}" style="left:${x - barWidth / 2}px;width:${barWidth}px;height:${b.height.toFixed(1)}px;${style}"></div>`;
         if (formatRefs(s.refs).some((r) => r.tag)) {
-          barsHtml += `<span class="tl-tag dsi dsi-tag" style="left:${x}px"></span>`;
+          barsHtml += `<span class="tl-tag hsi hsi-tag" style="left:${x}px"></span>`;
         }
       }
       const cls = s.kind === 'commit' ? (s.missing ? 'tl-tick deleted' : 'tl-tick') : `tl-tick ${s.kind}`;
@@ -272,8 +272,8 @@ export class Slider {
     this.moreEl.hidden = !this.hasMore;
     this.moreEl.disabled = this.loading;
     this.moreEl.innerHTML = this.loading
-      ? '<span class="dsi dsi-loading dsi-modifier-spin"></span> Loading'
-      : '<span class="dsi dsi-chevron-left"></span> Older';
+      ? '<span class="hsi hsi-loading hsi-modifier-spin"></span> Loading'
+      : '<span class="hsi hsi-chevron-left"></span> Older';
     this.moreEl.title = 'Load older commits (Shift+click loads the entire history)';
   }
 

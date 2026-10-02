@@ -34,7 +34,7 @@ Monaco Editor itself includes third-party code; see its [ThirdPartyNotices.txt](
 
 ## Codicons
 
-https://github.com/microsoft/vscode-codicons, used for the panel's icons (`dist/webview/icons.css`, `ds-codicon.ttf`; renamed so they do not clash with Monaco's copy).
+https://github.com/microsoft/vscode-codicons, used for the panel's icons (`dist/webview/icons.css`, `hs-codicon.ttf`; renamed so they do not clash with Monaco's copy).
 
 The icon font is licensed under [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/) (© Microsoft Corporation). The accompanying code is licensed as follows:
 

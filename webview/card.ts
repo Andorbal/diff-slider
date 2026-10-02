@@ -95,14 +95,14 @@ export class Card {
             : stop.dirty
               ? 'Includes unsaved changes from the editor. Updates live as you type.'
               : 'The file as it is on disk. Updates live as it changes.';
-      const icon = stop.kind === 'working' ? 'dsi-edit' : 'dsi-diff-added';
+      const icon = stop.kind === 'working' ? 'hsi-edit' : 'hsi-diff-added';
       return `
-        <div class="card-head"><span class="dsi ${icon}"></span><strong>${title}</strong>${chip}</div>
+        <div class="card-head"><span class="hsi ${icon}"></span><strong>${title}</strong>${chip}</div>
         <div class="card-body">${escapeHtml(detail)}</div>
         ${this.actionsHtml(stop)}`;
     }
     const refs = formatRefs(stop.refs)
-      .map((r) => `<span class="ref ${r.tag ? 'tag' : ''}">${r.tag ? '<span class="dsi dsi-tag"></span>' : ''}${escapeHtml(r.text)}</span>`)
+      .map((r) => `<span class="ref ${r.tag ? 'tag' : ''}">${r.tag ? '<span class="hsi hsi-tag"></span>' : ''}${escapeHtml(r.text)}</span>`)
       .join('');
     const bodyLines = (stop.body ?? '').split('\n');
     const body =
@@ -127,7 +127,7 @@ export class Card {
         : '';
     return `
       <div class="card-head">
-        <span class="dsi dsi-git-commit"></span>
+        <span class="hsi hsi-git-commit"></span>
         <code class="sha" title="${escapeHtml(stop.sha ?? '')}">${escapeHtml(stopLabel(stop))}</code>
         ${refs}
         ${chip}
@@ -135,10 +135,10 @@ export class Card {
       <div class="card-subject">${escapeHtml(stop.subject)}</div>
       ${stop.body ? `<div class="card-body">${escapeHtml(body)}</div>` : ''}
       <div class="card-meta">
-        <span class="dsi dsi-account"></span><span title="${escapeHtml(stop.authorEmail ?? '')}">${escapeHtml(stop.authorName ?? '')}</span>${committer}
+        <span class="hsi hsi-account"></span><span title="${escapeHtml(stop.authorEmail ?? '')}">${escapeHtml(stop.authorName ?? '')}</span>${committer}
       </div>
       <div class="card-meta">
-        <span class="dsi dsi-clock"></span><span>${stop.authorDate ? `${relativeTime(stop.authorDate)} · ${absoluteTime(stop.authorDate)}` : ''}</span>
+        <span class="hsi hsi-clock"></span><span>${stop.authorDate ? `${relativeTime(stop.authorDate)} · ${absoluteTime(stop.authorDate)}` : ''}</span>
         ${stats ? `<span class="card-stats">${stats}</span>` : ''}
       </div>
       ${file ? `<div class="card-meta card-file">${file}</div>` : ''}

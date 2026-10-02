@@ -1,6 +1,6 @@
 /**
  * End-to-end test against a real VS Code build (code-server) with this
- * extension installed. Skipped unless DIFF_SLIDER_CODE_SERVER points at one,
+ * extension installed. Skipped unless HISTORY_SLIDER_CODE_SERVER points at one,
  * e.g. started with:
  *
  *   code-server --auth none --bind-addr 127.0.0.1:8123 \
@@ -14,8 +14,8 @@ import * as os from 'os';
 import * as path from 'path';
 import { expect, test, type FrameLocator, type Locator, type Page } from '@playwright/test';
 
-const SERVER = process.env.DIFF_SLIDER_CODE_SERVER;
-test.skip(!SERVER, 'Set DIFF_SLIDER_CODE_SERVER to a code-server URL with the extension installed');
+const SERVER = process.env.HISTORY_SLIDER_CODE_SERVER;
+test.skip(!SERVER, 'Set HISTORY_SLIDER_CODE_SERVER to a code-server URL with the extension installed');
 
 const SUBJECTS = [
   'Add retry helper',
@@ -34,7 +34,7 @@ const SUBJECTS = [
 
 /** A repo whose src/request.ts has 12 commits (renamed from src/net.ts), a staged change and an unstaged one. */
 function createRepo(): string {
-  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'diff-slider-e2e-')));
+  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'history-slider-e2e-')));
   let day = 0;
   const git = (...args: string[]) => {
     const date = new Date(Date.UTC(2025, 2, 1 + day * 3, 10)).toISOString();
@@ -75,7 +75,7 @@ function createRepo(): string {
 let page: Page;
 let repo: string;
 
-/** The Diff Slider webview that is currently visible. */
+/** The History Slider webview that is currently visible. */
 async function slider(): Promise<FrameLocator> {
   const outer = page.locator('iframe.webview.ready').filter({ visible: true });
   await expect(outer).toHaveCount(1);
@@ -115,7 +115,7 @@ async function contextMenu(target: Locator, label: string) {
   await expect(page.locator('.context-view .monaco-menu')).toHaveCount(0);
 }
 
-test.describe.serial('Diff Slider in VS Code', () => {
+test.describe.serial('History Slider in VS Code', () => {
   test.beforeAll(async ({ browser }) => {
     repo = createRepo();
     page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
@@ -174,13 +174,13 @@ test.describe.serial('Diff Slider in VS Code', () => {
     await expect(f.locator('.toast')).toContainText('Nothing to show');
     await expect(f.locator('.tl-tick')).toHaveCount(14);
     await runCommand('Preferences: Open User Settings (JSON)');
-    await expect(page.locator('.editor-instance .view-lines')).toContainText('"diffSlider.contentChangesOnly": false');
+    await expect(page.locator('.editor-instance .view-lines')).toContainText('"historySlider.contentChangesOnly": false');
     await page.keyboard.press('Control+W');
     await page.locator('.tab', { hasText: 'History: request.ts' }).click();
     await (await slider()).locator('label.check').click();
     await expect(box).toBeChecked();
     // VS Code reports failed settings writes (such as an unregistered setting) as notifications.
-    await expect(page.locator('.notifications-toasts', { hasText: 'Diff Slider' })).toHaveCount(0);
+    await expect(page.locator('.notifications-toasts', { hasText: 'History Slider' })).toHaveCount(0);
   });
 
   test('opens the same comparison in the VS Code diff editor', async () => {

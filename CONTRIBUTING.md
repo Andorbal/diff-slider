@@ -4,7 +4,7 @@
 
 | Path | What lives there |
 | --- | --- |
-| `src/extension.ts` | Activation, the `diffSlider.showHistory` command, working out which file (and commit) it was invoked on |
+| `src/extension.ts` | Activation, the `historySlider.showHistory` command, working out which file (and commit) it was invoked on |
 | `src/historyPanel.ts` | One webview panel per file: loads history, serves file contents, watches the file and repository |
 | `src/fileHistory.ts`, `src/git.ts` | Git access (`git log --follow`, a long-lived `git cat-file --batch`). No `vscode` imports, so they are tested against real repositories |
 | `src/shared/protocol.ts` | Messages between the extension and the webview |
@@ -34,20 +34,20 @@ The UI tests (`test/ui`) serve the built webview the way VS Code does: the page 
 
 ### End-to-end tests in VS Code
 
-`test/e2e` drives the real extension inside [code-server](https://github.com/coder/code-server) (VS Code in a browser). They are skipped unless `DIFF_SLIDER_CODE_SERVER` is set.
+`test/e2e` drives the real extension inside [code-server](https://github.com/coder/code-server) (VS Code in a browser). They are skipped unless `HISTORY_SLIDER_CODE_SERVER` is set.
 
 ```sh
 # code-server needs Node 24 and, on Linux, libkrb5-dev to build.
 npm install --prefix /tmp/cs code-server
 
 # Point an extensions directory at this checkout.
-mkdir -p /tmp/cs-ext && ln -sfn "$PWD" /tmp/cs-ext/AndrewBenz.diff-slider-0.2.1
+mkdir -p /tmp/cs-ext && ln -sfn "$PWD" /tmp/cs-ext/AndrewBenz.history-slider-0.2.1
 
 npm run build
 /tmp/cs/node_modules/.bin/code-server --auth none --bind-addr 127.0.0.1:8123 \
   --extensions-dir /tmp/cs-ext --user-data-dir /tmp/cs-data --disable-workspace-trust &
 
-DIFF_SLIDER_CODE_SERVER=http://127.0.0.1:8123 npm run test:e2e
+HISTORY_SLIDER_CODE_SERVER=http://127.0.0.1:8123 npm run test:e2e
 ```
 
 Each run creates a throwaway repository and checks: the keybinding, dragging across a rename, saving the **Content changes only** setting, opening VS Code's diff editor, live updates while typing, refreshing after an outside `git commit`, restoring after a window reload, and the Timeline and Explorer context menus.
@@ -70,10 +70,10 @@ The first run clones Express into `.demos/express` and checks out a pinned commi
 ## Packaging and releases
 
 ```sh
-npm run package      # diff-slider-<version>.vsix
+npm run package      # history-slider-<version>.vsix
 ```
 
-The **Build** workflow (`.github/workflows/build.yml`) runs the typecheck, unit tests and UI tests on every push to `main` and every pull request, then packages the extension. The `.vsix` is attached to the run as an artifact named `diff-slider-<version>-<sha>`.
+The **Build** workflow (`.github/workflows/build.yml`) runs the typecheck, unit tests and UI tests on every push to `main` and every pull request, then packages the extension. The `.vsix` is attached to the run as an artifact named `history-slider-<version>-<sha>`.
 
 To publish a release, bump the version (`npm version <x.y.z> --no-git-tag-version` updates `package.json` and `package-lock.json`), add a `CHANGELOG.md` entry, and once that is on `main`, push a matching tag:
 

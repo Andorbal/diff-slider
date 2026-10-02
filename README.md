@@ -1,12 +1,12 @@
-# Diff Slider
+# History Slider
 
 Scrub through a file's git history with a slider and watch the diff update as you drag.
 
-![Diff Slider opening on lib/response.js with Ctrl+Alt+H, then dragging the old handle back through its history while the diff updates and a commit card follows the handle; dragging past the oldest loaded commit loads 50 more](media/demo/scrub-history.gif)
+![History Slider opening on lib/response.js with Ctrl+Alt+H, then dragging the old handle back through its history while the diff updates and a commit card follows the handle; dragging past the oldest loaded commit loads 50 more](media/demo/scrub-history.gif)
 
 <sub>The recordings on this page were made in VS Code on the history of [Express](https://github.com/expressjs/express) (MIT License).</sub>
 
-Most history tools give you a list of commits. To see how a file changed, you open a commit, find the file, pick "compare with previous" or "compare with working copy", and repeat for the next commit. Diff Slider puts the file's whole history on one timeline above a diff and gives you two handles to drag.
+Most history tools give you a list of commits. To see how a file changed, you open a commit, find the file, pick "compare with previous" or "compare with working copy", and repeat for the next commit. History Slider puts the file's whole history on one timeline above a diff and gives you two handles to drag.
 
 ## Using it
 
@@ -15,7 +15,7 @@ Open a file and press **Ctrl+Alt+H** (**⌃⌘H** on macOS). You can also run it
 - the **Show File History Slider** button (the compare icon) in the editor title bar
 - the right-click menu of a file in the Explorer, an editor tab, or the Source Control view
 - a commit in the **Timeline** view, which opens the slider on that commit's change
-- the Command Palette: **Diff Slider: Show File History Slider**
+- the Command Palette: **History Slider: Show File History Slider**
 
 ### The timeline
 
@@ -71,17 +71,17 @@ Clicking the **OLD** or **NEW** label under the timeline focuses that handle.
 
 | Setting | Default | |
 | --- | --- | --- |
-| `diffSlider.pageSize` | `50` | Commits loaded at a time |
-| `diffSlider.followRenames` | `true` | Follow history across renames (`git log --follow`) |
-| `diffSlider.firstParentOnly` | `false` | Only show first-parent commits, so each merged branch is one step |
-| `diffSlider.showStaged` | `true` | Add a **Staged** stop when the file has staged changes |
-| `diffSlider.maxFileSizeMB` | `5` | Revisions larger than this aren't loaded |
-| `diffSlider.renderSideBySide` | `true` | Side-by-side or inline diff (also a toolbar toggle) |
-| `diffSlider.ignoreTrimWhitespace` | `false` | Ignore leading/trailing whitespace (also a toolbar toggle) |
-| `diffSlider.hideUnchangedRegions` | `false` | Collapse unchanged regions (also a toolbar toggle) |
-| `diffSlider.wordWrap` | `false` | Wrap long lines (also a toolbar toggle) |
-| `diffSlider.contentChangesOnly` | `true` | Hide commits that only rename the file, change its mode or convert its line endings (also the **Content changes only** checkbox) |
-| `diffSlider.showEditorTitleButton` | `true` | Show the button in the editor title bar |
+| `historySlider.pageSize` | `50` | Commits loaded at a time |
+| `historySlider.followRenames` | `true` | Follow history across renames (`git log --follow`) |
+| `historySlider.firstParentOnly` | `false` | Only show first-parent commits, so each merged branch is one step |
+| `historySlider.showStaged` | `true` | Add a **Staged** stop when the file has staged changes |
+| `historySlider.maxFileSizeMB` | `5` | Revisions larger than this aren't loaded |
+| `historySlider.renderSideBySide` | `true` | Side-by-side or inline diff (also a toolbar toggle) |
+| `historySlider.ignoreTrimWhitespace` | `false` | Ignore leading/trailing whitespace (also a toolbar toggle) |
+| `historySlider.hideUnchangedRegions` | `false` | Collapse unchanged regions (also a toolbar toggle) |
+| `historySlider.wordWrap` | `false` | Wrap long lines (also a toolbar toggle) |
+| `historySlider.contentChangesOnly` | `true` | Hide commits that only rename the file, change its mode or convert its line endings (also the **Content changes only** checkbox) |
+| `historySlider.showEditorTitleButton` | `true` | Show the button in the editor title bar |
 
 ## Requirements
 
@@ -92,21 +92,21 @@ Clicking the **OLD** or **NEW** label under the timeline focuses that handle.
 
 - The diff inside the panel is read-only. Use **Open in VS Code diff editor** to edit or to get language features.
 - Syntax highlighting comes from the Monaco editor's built-in grammars. It follows your theme's editor and diff colors, but token colors can differ slightly from your editor's.
-- Binary files, and revisions over `diffSlider.maxFileSizeMB`, show a message instead of a diff.
+- Binary files, and revisions over `historySlider.maxFileSizeMB`, show a message instead of a diff.
 - Merge commits are compared against their first parent.
 
 ## Installing
 
-Download the `.vsix` from the [latest release](https://github.com/Andorbal/diff-slider/releases/latest), or from the artifacts of any [Build workflow run](https://github.com/Andorbal/diff-slider/actions/workflows/build.yml), then run `code --install-extension diff-slider-<version>.vsix`.
+Download the `.vsix` from the [latest release](https://github.com/Andorbal/history-slider/releases/latest), or from the artifacts of any [Build workflow run](https://github.com/Andorbal/history-slider/actions/workflows/build.yml), then run `code --install-extension history-slider-<version>.vsix`.
 
-Builds from the same release share a version number, and VS Code keeps running the old build until you reload the window. If a panel opened after installing says **Diff Slider was updated while this window was open**, reload the window.
+Builds from the same release share a version number, and VS Code keeps running the old build until you reload the window. If a panel opened after installing says **History Slider was updated while this window was open**, reload the window.
 
 To build it yourself:
 
 ```sh
 npm install
-npm run package          # creates diff-slider-<version>.vsix
-code --install-extension diff-slider-0.2.1.vsix
+npm run package          # creates history-slider-<version>.vsix
+code --install-extension history-slider-0.2.1.vsix
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development and testing.

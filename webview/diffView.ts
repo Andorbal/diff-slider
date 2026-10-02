@@ -35,7 +35,7 @@ function diffOptions(o: DiffOptions): monaco.editor.IDiffEditorOptions {
 
 function problemOf(r: ContentResult): string | undefined {
   if (r.binary) return 'This revision is a binary file, so there is no text diff to show.';
-  if (r.tooLarge) return 'This revision is larger than the diffSlider.maxFileSizeMB setting allows.';
+  if (r.tooLarge) return 'This revision is larger than the historySlider.maxFileSizeMB setting allows.';
   if (r.error) return `Could not load this revision: ${r.error}`;
   if (r.text === undefined) return 'This revision has no content.';
   return undefined;
@@ -236,7 +236,7 @@ export class DiffView {
       return existing;
     }
     const uri = monaco.Uri.from({
-      scheme: 'diff-slider',
+      scheme: 'history-slider',
       path: `/${++this.generation}/${this.fileName}`,
     });
     const model = monaco.editor.createModel(text, this.language, uri);

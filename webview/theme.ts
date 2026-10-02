@@ -110,8 +110,8 @@ export function applyTheme(monaco: typeof Monaco): void {
     const hex = toHex(cssVar(`--vscode-${id.replace(/\./g, '-')}`));
     if (hex) colors[id] = hex;
   }
-  monaco.editor.defineTheme('diff-slider', { base: baseTheme(), inherit: true, rules: [], colors });
-  monaco.editor.setTheme('diff-slider');
+  monaco.editor.defineTheme('history-slider', { base: baseTheme(), inherit: true, rules: [], colors });
+  monaco.editor.setTheme('history-slider');
 }
 
 export interface EditorFont {

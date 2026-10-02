@@ -1,4 +1,4 @@
-declare const __DIFF_SLIDER_BUILD__: string | undefined;
+declare const __HISTORY_SLIDER_BUILD__: string | undefined;
 
 /**
  * Identifies one build of the extension. esbuild stamps the same value into the
@@ -10,4 +10,4 @@ declare const __DIFF_SLIDER_BUILD__: string | undefined;
  * cannot save settings it never registered. Comparing the two stamps lets the
  * panel notice and ask for a reload.
  */
-export const BUILD_ID: string = typeof __DIFF_SLIDER_BUILD__ === 'string' ? __DIFF_SLIDER_BUILD__ : 'dev';
+export const BUILD_ID: string = typeof __HISTORY_SLIDER_BUILD__ === 'string' ? __HISTORY_SLIDER_BUILD__ : 'dev';

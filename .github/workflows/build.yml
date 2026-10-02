@@ -36,7 +36,7 @@ jobs:
         id: meta
         run: |
           version=$(node -p "require('./package.json').version")
-          echo "artifact=diff-slider-${version}-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "artifact=history-slider-${version}-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
           if [[ "$GITHUB_REF" == refs/tags/v* && "$GITHUB_REF_NAME" != "v${version}" ]]; then
             echo "::error::Tag $GITHUB_REF_NAME does not match package.json version ${version}"
             exit 1
@@ -52,7 +52,7 @@ jobs:
       - run: npm run test:ui
 
       - name: Package
-        # Runs the production build (vscode:prepublish) and writes diff-slider-<version>.vsix.
+        # Runs the production build (vscode:prepublish) and writes history-slider-<version>.vsix.
         run: npm run package
 
       - uses: actions/upload-artifact@v4

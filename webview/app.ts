@@ -101,46 +101,46 @@ export class App {
     this.root.innerHTML = `
       <header class="topbar">
         <div class="file">
-          <span class="dsi dsi-history"></span>
+          <span class="hsi hsi-history"></span>
           <span class="file-name"></span>
           <span class="file-dir"></span>
           <span class="file-count"></span>
         </div>
         <div class="toolbar" role="toolbar">
           <label class="check" title="Hide commits that don't change what the diff shows: pure renames, mode changes and line-ending conversions">
-            <input type="checkbox" data-option="contentChangesOnly"><span class="check-box dsi dsi-check"></span><span class="check-text">Content changes only</span>
+            <input type="checkbox" data-option="contentChangesOnly"><span class="check-box hsi hsi-check"></span><span class="check-text">Content changes only</span>
           </label>
           <span class="sep"></span>
-          <button data-cmd="older" title="Step both handles one commit older ( [ )"><span class="dsi dsi-arrow-left"></span></button>
-          <button data-cmd="newer" title="Step both handles one commit newer ( ] )"><span class="dsi dsi-arrow-right"></span></button>
-          <button data-cmd="reset" title="Reset: latest commit ↔ working copy (R)"><span class="dsi dsi-discard"></span></button>
+          <button data-cmd="older" title="Step both handles one commit older ( [ )"><span class="hsi hsi-arrow-left"></span></button>
+          <button data-cmd="newer" title="Step both handles one commit newer ( ] )"><span class="hsi hsi-arrow-right"></span></button>
+          <button data-cmd="reset" title="Reset: latest commit ↔ working copy (R)"><span class="hsi hsi-discard"></span></button>
           <span class="sep"></span>
-          <button data-toggle="renderSideBySide" title="Side by side (S)"><span class="dsi dsi-split-horizontal"></span></button>
-          <button data-toggle="ignoreTrimWhitespace" title="Ignore leading/trailing whitespace (W)"><span class="dsi dsi-whitespace"></span></button>
-          <button data-toggle="hideUnchangedRegions" title="Collapse unchanged regions (C)"><span class="dsi dsi-fold"></span></button>
-          <button data-toggle="wordWrap" title="Word wrap (Z)"><span class="dsi dsi-word-wrap"></span></button>
+          <button data-toggle="renderSideBySide" title="Side by side (S)"><span class="hsi hsi-split-horizontal"></span></button>
+          <button data-toggle="ignoreTrimWhitespace" title="Ignore leading/trailing whitespace (W)"><span class="hsi hsi-whitespace"></span></button>
+          <button data-toggle="hideUnchangedRegions" title="Collapse unchanged regions (C)"><span class="hsi hsi-fold"></span></button>
+          <button data-toggle="wordWrap" title="Word wrap (Z)"><span class="hsi hsi-word-wrap"></span></button>
           <span class="sep"></span>
-          <button data-cmd="openDiff" title="Open this comparison in the VS Code diff editor (O)"><span class="dsi dsi-go-to-file"></span></button>
-          <button data-cmd="refresh" title="Reload history"><span class="dsi dsi-refresh"></span></button>
-          <button data-cmd="help" title="Keyboard shortcuts (?)"><span class="dsi dsi-keyboard"></span></button>
+          <button data-cmd="openDiff" title="Open this comparison in the VS Code diff editor (O)"><span class="hsi hsi-go-to-file"></span></button>
+          <button data-cmd="refresh" title="Reload history"><span class="hsi hsi-refresh"></span></button>
+          <button data-cmd="help" title="Keyboard shortcuts (?)"><span class="hsi hsi-keyboard"></span></button>
         </div>
       </header>
       <div class="notice" role="alert" hidden></div>
       <div class="timeline-slot"></div>
       <div class="compare">
         <button class="side old" data-cmd="focusOld" title="Focus the old handle"></button>
-        <span class="dsi dsi-arrow-right compare-arrow"></span>
+        <span class="hsi hsi-arrow-right compare-arrow"></span>
         <button class="side new" data-cmd="focusNew" title="Focus the new handle"></button>
         <div class="stats"></div>
         <div class="nav">
-          <button data-cmd="prevChange" title="Previous change (Shift+N)"><span class="dsi dsi-arrow-up"></span></button>
-          <button data-cmd="nextChange" title="Next change (N)"><span class="dsi dsi-arrow-down"></span></button>
+          <button data-cmd="prevChange" title="Previous change (Shift+N)"><span class="hsi hsi-arrow-up"></span></button>
+          <button data-cmd="nextChange" title="Next change (N)"><span class="hsi hsi-arrow-down"></span></button>
         </div>
       </div>
       <div class="diff-host"><div class="diff"></div><div class="overlay" hidden></div></div>
       <div class="status"></div>
       <div class="help" hidden>
-        <div class="help-head"><strong>Keyboard shortcuts</strong><button data-cmd="help" title="Close"><span class="dsi dsi-close"></span></button></div>
+        <div class="help-head"><strong>Keyboard shortcuts</strong><button data-cmd="help" title="Close"><span class="hsi hsi-close"></span></button></div>
         <table>${SHORTCUTS.map(([k, v]) => `<tr><td><kbd>${escapeHtml(k)}</kbd></td><td>${escapeHtml(v)}</td></tr>`).join('')}</table>
         <p>Whichever handle is further left is always the <em>old</em> side of the diff.</p>
       </div>
@@ -189,7 +189,7 @@ export class App {
 
   /** Read-only hooks used by the UI tests. */
   private exposeForTests(): void {
-    (window as unknown as { __diffSlider: unknown }).__diffSlider = {
+    (window as unknown as { __historySlider: unknown }).__historySlider = {
       selection: () => this.selection,
       ordered: () => {
         const { oldStop, newStop } = this.ordered();
@@ -297,11 +297,11 @@ export class App {
     this.root.classList.remove('state-loading', 'state-error', 'state-empty', 'state-ready');
     this.root.classList.add(`state-${state}`);
     if (state === 'loading') {
-      this.el.status.innerHTML = `<span class="dsi dsi-loading dsi-modifier-spin"></span> ${escapeHtml(message)}`;
+      this.el.status.innerHTML = `<span class="hsi hsi-loading hsi-modifier-spin"></span> ${escapeHtml(message)}`;
     } else if (state === 'error') {
-      this.el.status.innerHTML = `<span class="dsi dsi-error"></span><div><p>${escapeHtml(message)}</p><button data-cmd="refresh">Try again</button></div>`;
+      this.el.status.innerHTML = `<span class="hsi hsi-error"></span><div><p>${escapeHtml(message)}</p><button data-cmd="refresh">Try again</button></div>`;
     } else if (state === 'empty') {
-      this.el.status.innerHTML = `<span class="dsi dsi-info"></span><p>${escapeHtml(message)}</p>`;
+      this.el.status.innerHTML = `<span class="hsi hsi-info"></span><p>${escapeHtml(message)}</p>`;
     } else {
       this.el.status.textContent = '';
     }
@@ -476,7 +476,7 @@ export class App {
     const action = hostBuild
       ? '<button data-cmd="reloadWindow">Reload Window</button>'
       : '<span>Run <strong>Developer: Reload Window</strong> to finish.</span>';
-    this.el.notice.innerHTML = `<span class="dsi dsi-warning"></span><span class="notice-text">Diff Slider was updated while this window was open. Reload the window so that everything works.</span>${action}`;
+    this.el.notice.innerHTML = `<span class="hsi hsi-warning"></span><span class="notice-text">History Slider was updated while this window was open. Reload the window so that everything works.</span>${action}`;
   }
 
   private sideHtml(stop: Stop | undefined, role: 'old' | 'new'): string {
